@@ -89,7 +89,7 @@ class Field(object):
         self.humans = Human.create_group(200, width, height)
     def update(self):
         #These two lines will eventually be done by clocks means
-        self.zombies.update(self)
+        #self.zombies.update(self)
         self.humans.update(self)
         
         for zombie in self.zombies:
@@ -103,6 +103,25 @@ class Field(object):
         zombie = Zombie()
         zombie.rect = human.rect
         self.zombies.add(zombie)
+    def register_events(self, events):
+        events.every_do(250, lambda: self.zombies.update(self))
+
+class EventLookup(object):
+    def __init__(self):
+        self.__mapping__= {}
+        self.next_event_id = pygame.USEREVENT
+    def add(self, event_type, func=lambda event: None):
+        self.__mapping__[event_type] = func
+    def next_event_type(self):
+        self.next_event_id = self.next_event_id + 1
+        return self.next_event_id
+    def every_do(self, millis, func=lambda: None):
+        event_id = self.next_event_type()
+        pygame.time.set_timer(event_id, millis)
+        self.add(event_id,lambda _: func())
+    def process_events(self):
+        for event in pygame.event.get():
+            self.__mapping__.get(event.type, lambda event: None)(event)
 
 def main():
     pygame.init()
@@ -110,13 +129,16 @@ def main():
     screen_height = 720
     screen = pygame.display.set_mode([screen_width, screen_height])
     pygame.display.set_caption("Zombie Simulation")
-    field = Field(screen_width, screen_height)
-    done = False
     clock = pygame.time.Clock()
-    while not done:
-        for event in pygame.event.get(): 
-            if event.type == pygame.QUIT: 
-                done = True
+    field = Field(screen_width, screen_height)
+    events = EventLookup()
+    field.register_events(events)
+    def mark_done(event):
+        main.done = True
+    main.done = False
+    events.add(pygame.QUIT, mark_done)
+    while not main.done:
+        events.process_events()
         field.update()
         screen.fill(BLACK)
         field.draw(screen)
