@@ -25,6 +25,11 @@ def dir_to(origin, dest):
     diffx, diffy = destx - originx, desty - originy
     angle = math.atan2(diffy, diffx)
     return (math.cos(angle), math.sin(angle))
+
+def random_direction():
+    x = 1 - (random.random() * 2)
+    y = 1 - (random.random() * 2)
+    return (x,y)
     
 class ActorGroup(pygame.sprite.Group):
     def closest_to(self, other):
@@ -48,6 +53,7 @@ class Actor(pygame.sprite.Sprite):
             actor.rect.x = random.randrange(width - actor.rect.width)
             actor.rect.y = random.randrange(height - actor.rect.height)
         return all_group
+    
     def __init__(self, color=WHITE):
         pygame.sprite.Sprite.__init__(self)
         width = 10
@@ -56,7 +62,7 @@ class Actor(pygame.sprite.Sprite):
         self.image.fill(CLEAR)
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
         self.rect = self.image.get_rect()
-        self.speed = 5
+        self.speed = float(4)
         
     def update_pos(self, direc):
         dirx,diry = direc
@@ -67,35 +73,34 @@ class Zombie(Actor):
     def __init__(self):
         Actor.__init__(self, RED)
     def update(self, field):
-        victim,_ = field.humans.closest_to(self)
-        if victim is None:
-            self.rect.x = self.rect.x + random.randint(-1,1)
-            self.rect.y = self.rect.y + random.randint(-1,1)
-        else:
+        victim,dist = field.humans.closest_to(self)
+        if victim is not None and dist < 200:
             self.update_pos(dir_to(self.rect.center, victim.rect.center))
-
+        else:
+            self.update_pos(random_direction())
+            
 class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
     def update(self, field):
-        self.rect.x = self.rect.x + random.randint(-1,1)
-        self.rect.y = self.rect.y + random.randint(-1,1)
+        self.update_pos(random_direction())
 
 class Field(object):
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
+    def __init__(self, rect):
+        self.rect = rect
+        width = rect.width
+        height = rect.height
         self.zombies = Zombie.create_group(5, width, height)
         self.humans = Human.create_group(200, width, height)
+    def register_events(self, events):
+        events.every_do(200, lambda: self.zombies.update(self))
+        events.every_do(100, lambda: self.humans.update(self))
     def update(self):
-        #These two lines will eventually be done by clocks means
-        #self.zombies.update(self)
-        self.humans.update(self)
-        
         for zombie in self.zombies:
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
             for human in dead:
                 self.turn(human)
+        self.check_edges()
     def draw(self, screen):
         self.zombies.draw(screen)
         self.humans.draw(screen)
@@ -103,9 +108,15 @@ class Field(object):
         zombie = Zombie()
         zombie.rect = human.rect
         self.zombies.add(zombie)
-    def register_events(self, events):
-        events.every_do(250, lambda: self.zombies.update(self))
-
+    def check_edges(self):
+        for each in self.zombies.sprites():
+            if not self.rect.contains(each.rect):
+                each.rect.center = self.rect.center
+        for each in self.humans.sprites():
+            if not self.rect.contains(each.rect):
+                each.rect.center = self.rect.center
+        
+        
 class EventLookup(object):
     def __init__(self):
         self.__mapping__= {}
@@ -125,12 +136,13 @@ class EventLookup(object):
 
 def main():
     pygame.init()
+    fps = 60
     screen_width = 960
     screen_height = 720
     screen = pygame.display.set_mode([screen_width, screen_height])
     pygame.display.set_caption("Zombie Simulation")
     clock = pygame.time.Clock()
-    field = Field(screen_width, screen_height)
+    field = Field(screen.get_rect())
     events = EventLookup()
     field.register_events(events)
     def mark_done(event):
@@ -143,7 +155,7 @@ def main():
         screen.fill(BLACK)
         field.draw(screen)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(fps)
     pygame.quit()
     
 if __name__ == '__main__':
