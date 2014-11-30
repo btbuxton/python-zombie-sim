@@ -26,10 +26,13 @@ def dir_to(origin, dest):
     angle = math.atan2(diffy, diffx)
     return (math.cos(angle), math.sin(angle))
 
+def opposite_dir(direc):
+    x,y = direc
+    return (float(-1) * x, float(-1) * y)
+    
 def random_direction():
-    def next_rand():
-        return 1 - (random.random() * 2)
-    return (next_rand(), next_rand())
+    angle = math.radians(random.randrange(0,360))
+    return (math.cos(angle), math.sin(angle))
     
 class ActorGroup(pygame.sprite.Group):
     def closest_to(self, other):
@@ -82,8 +85,26 @@ class Zombie(Actor):
 class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
+        self.current_dir = random_direction()
     def update(self, field):
-        self.update_pos(random_direction())
+        goto = self.rect.center
+        factor = float(1)
+        use_dir = True
+        for zombie in field.zombies.sprites():
+            dist = distance(self.rect.center, zombie.rect.center)
+            if dist > 50:
+                continue
+            use_dir = False
+            factor_dist = 50 - dist
+            direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
+            goto_x, goto_y = goto
+            dir_x, dir_y = direc
+            goto = (goto_x + (factor_dist * factor * dir_x), goto_y + (factor_dist * factor * dir_y))
+        
+        go_to_dir = dir_to(self.rect.center, goto)
+        if not use_dir:
+            self.current_dir = go_to_dir
+        self.update_pos(self.current_dir)
 
 class Field(object):
     def __init__(self, rect):
@@ -92,7 +113,7 @@ class Field(object):
         
     def register_events(self, events):
         events.every_do(200, lambda: self.zombies.update(self))
-        events.every_do(100, lambda: self.humans.update(self))
+        events.every_do(50, lambda: self.humans.update(self))
         
     def update(self, screen):
         for zombie in self.zombies:
@@ -113,21 +134,20 @@ class Field(object):
     def check_and_fix_edges(self, screen):
         def check_and_fix(actor, parent_rect):
             if not parent_rect.contains(actor.rect):
-                if (actor.rect.x < parent_rect.x):
-                    actor.rect.x = parent_rect.width - actor.rect.width
-                if (actor.rect.x > (parent_rect.width - actor.rect.width)):
-                    actor.rect.x = parent_rect.x
-                if (actor.rect.y < parent_rect.y):
-                    actor.rect.y = parent_rect.height - actor.rect.height
-                if (actor.rect.y > (parent_rect.height - actor.rect.height)):
-                    actor.rect.y = parent_rect.y
+                if actor.rect.left < parent_rect.left:
+                    actor.rect.right = parent_rect.right
+                if actor.rect.right > parent_rect.right:
+                    actor.rect.left = parent_rect.left
+                if actor.rect.top < parent_rect.top:
+                    actor.rect.bottom = parent_rect.bottom
+                if actor.rect.bottom > parent_rect.bottom:
+                    actor.rect.top = parent_rect.top
                 #actor.rect.center = self.rect.center
         rect = screen.get_rect()
         for each in self.zombies.sprites():
             check_and_fix(each, rect)
         for each in self.humans.sprites():
             check_and_fix(each, rect)
-        
         
 class EventLookup(object):
     def __init__(self):
