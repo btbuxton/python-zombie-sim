@@ -56,6 +56,12 @@ class Actor(pygame.sprite.Sprite):
         self.image.fill(CLEAR)
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
         self.rect = self.image.get_rect()
+        self.speed = 5
+        
+    def update_pos(self, direc):
+        dirx,diry = direc
+        self.rect.x = self.rect.x + (dirx * self.speed)
+        self.rect.y = self.rect.y + (diry * self.speed)
         
 class Zombie(Actor):
     def __init__(self):
@@ -66,9 +72,7 @@ class Zombie(Actor):
             self.rect.x = self.rect.x + random.randint(-1,1)
             self.rect.y = self.rect.y + random.randint(-1,1)
         else:
-            dirx,diry = dir_to(self.rect.center, victim.rect.center)
-            self.rect.x = self.rect.x + (dirx * 5)
-            self.rect.y = self.rect.y + (diry * 5)
+            self.update_pos(dir_to(self.rect.center, victim.rect.center))
 
 class Human(Actor):
     def __init__(self):

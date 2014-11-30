@@ -2,10 +2,10 @@ from nose.tools import *
 import zombiesim
 
 def setup():
-    print "SETUP!"
+    pass
 
 def teardown():
-    print "TEAR DOWN!"
+    pass
 
 def test_basic():
     print "I RAN!"
