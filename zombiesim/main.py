@@ -69,8 +69,8 @@ class Actor(pygame.sprite.Sprite):
         
     def update_pos(self, direc):
         dirx,diry = direc
-        self.rect.x = self.rect.x + (dirx * self.speed)
-        self.rect.y = self.rect.y + (diry * self.speed)
+        self.rect.x = round(self.rect.x + (dirx * self.speed))
+        self.rect.y = round(self.rect.y + (diry * self.speed))
         
 class Zombie(Actor):
     def __init__(self):
