@@ -31,8 +31,14 @@ def opposite_dir(direc):
     return (float(-1) * x, float(-1) * y)
     
 def random_direction():
-    angle = math.radians(random.randrange(0,360))
+    angle = math.radians(random.randrange(0, 360))
     return (math.cos(angle), math.sin(angle))
+
+def xfrange(start, stop, step):
+    current = start
+    while ((step > 0 and current < stop) or (step < 0 and current > stop)):
+        yield current
+        current = current + step
     
 class ActorGroup(pygame.sprite.Group):
     def closest_to(self, other):
@@ -57,7 +63,7 @@ class Actor(pygame.sprite.Sprite):
             actor.rect.y = random.randrange(rect.y, rect.height - actor.rect.height)
         return all_group
     
-    def __init__(self, color=WHITE):
+    def __init__(self, color=WHITE, default_speed=4.0):
         pygame.sprite.Sprite.__init__(self)
         width = 10
         height = 10
@@ -65,12 +71,22 @@ class Actor(pygame.sprite.Sprite):
         self.image.fill(CLEAR)
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
         self.rect = self.image.get_rect()
-        self.speed = float(4)
+        self.speed = default_speed
         
     def update_pos(self, direc):
         dirx,diry = direc
         self.rect.x = round(self.rect.x + (dirx * self.speed))
         self.rect.y = round(self.rect.y + (diry * self.speed))
+        
+    def hit_edge(self, parent_rect):
+        if self.rect.left < parent_rect.left:
+            self.rect.right = parent_rect.right
+        if self.rect.right > parent_rect.right:
+            self.rect.left = parent_rect.left
+        if self.rect.top < parent_rect.top:
+            self.rect.bottom = parent_rect.bottom
+        if self.rect.bottom > parent_rect.bottom:
+            self.rect.top = parent_rect.top
         
 class Zombie(Actor):
     def __init__(self):
@@ -86,7 +102,13 @@ class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
         self.current_dir = random_direction()
+        self.lifetime = xfrange(2 + (random.random() * 4),1,-0.0005)
+        
+    def change_dir(self):
+        self.current_dir = random_direction()
+        
     def update(self, field):
+        self.speed = next(self.lifetime, 1)
         goto = self.rect.center
         factor = float(1)
         use_dir = True
@@ -105,6 +127,7 @@ class Human(Actor):
         if not use_dir:
             self.current_dir = go_to_dir
         self.update_pos(self.current_dir)
+    
 
 class Field(object):
     def __init__(self, rect):
@@ -113,7 +136,7 @@ class Field(object):
         
     def register_events(self, events):
         events.every_do(200, lambda: self.zombies.update(self))
-        events.every_do(50, lambda: self.humans.update(self))
+        events.every_do(100, lambda: self.humans.update(self))
         
     def update(self, screen):
         for zombie in self.zombies:
@@ -134,15 +157,7 @@ class Field(object):
     def check_and_fix_edges(self, screen):
         def check_and_fix(actor, parent_rect):
             if not parent_rect.contains(actor.rect):
-                if actor.rect.left < parent_rect.left:
-                    actor.rect.right = parent_rect.right
-                if actor.rect.right > parent_rect.right:
-                    actor.rect.left = parent_rect.left
-                if actor.rect.top < parent_rect.top:
-                    actor.rect.bottom = parent_rect.bottom
-                if actor.rect.bottom > parent_rect.bottom:
-                    actor.rect.top = parent_rect.top
-                #actor.rect.center = self.rect.center
+                actor.hit_edge(parent_rect)
         rect = screen.get_rect()
         for each in self.zombies.sprites():
             check_and_fix(each, rect)
