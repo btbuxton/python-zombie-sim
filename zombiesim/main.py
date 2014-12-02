@@ -148,19 +148,19 @@ class Human(Actor):
         return self.speed == 0
         
     def reset_lifetime(self):
-        self.lifetime = xfrange(2 + (random.random() * 4),0,-0.0005)
+        self.lifetime = xfrange(2 + (random.random() * 2),0.5,-0.0001)
         
     def alpha(self):
         result = self.speed / 2.0
         return min(result, 1)
         
     def update(self, field):
-        self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
             field.turn(self)
             return
+        self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
         goto = self.rect.center
         factor = float(1)
         use_dir = True
@@ -188,6 +188,11 @@ class Human(Actor):
             go_to_dir = dir_to(self.rect.center, goto)
             self.current_dir = go_to_dir
         self.update_pos(self.current_dir)
+        
+    def hit_edge(self, parent_rect):
+        x = random.randint(parent_rect.left, parent_rect.right)
+        y = random.randint(parent_rect.top, parent_rect.bottom)
+        self.current_dir = dir_to(self.rect.center, (x,y))
 
 class Consumable(Entity):
     def __init__(self, color=GREEN, amount=5):
@@ -207,12 +212,12 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self):
-        Consumable.__init__(self, GREEN, amount=10)
+        Consumable.__init__(self, GREEN, amount=50)
     
 class Field(object):
     def __init__(self, rect):
         self.zombies = Zombie.create_group(5, rect)
-        self.humans = Human.create_group(500, rect)
+        self.humans = Human.create_group(250, rect)
         self.food = Food.create_group(4, rect)
         
     def register_events(self, events):
@@ -220,9 +225,11 @@ class Field(object):
         events.every_do(100, lambda: self.humans.update(self))
         
     def update(self, screen):
+        all_dead = []
         for zombie in self.zombies:
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
-            for human in dead:
+            all_dead.extend(dead)
+        for human in all_dead:
                 self.turn(human)
         for food in self.food:
             eaten = pygame.sprite.spritecollide(food, self.humans, False, collided = pygame.sprite.collide_rect)
