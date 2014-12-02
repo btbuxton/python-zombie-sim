@@ -12,7 +12,8 @@ CLEAR = (0,   0,   0, 0)
 RED =   (255, 0,   0)
 BLACK = (0,   0,   0)
 WHITE = (255, 255, 255)
-PINK = (255, 192, 192)
+PINK =  (255, 192, 192)
+GREEN = (0,   255,   0)
 
 def distance(origin, dest):
     originx,originy = origin
@@ -40,7 +41,17 @@ def xfrange(start, stop, step):
         yield current
         current = current + step
     
-class ActorGroup(pygame.sprite.Group):
+class EntityGroup(pygame.sprite.Group):
+    def __init__(self, clazz):
+        pygame.sprite.Group.__init__(self)
+        self.entity_class = clazz
+    
+    def create_one(self, rect):
+        entity = self.entity_class()
+        self.add(entity)
+        entity.rect.x = random.randrange(rect.x, rect.width - entity.rect.width)
+        entity.rect.y = random.randrange(rect.y, rect.height - entity.rect.height)
+        
     def closest_to(self, other):
         curmin = sys.maxint
         curactor = None
@@ -51,31 +62,38 @@ class ActorGroup(pygame.sprite.Group):
                 curmin = dist
                 curactor = each
         return (curactor, curmin)
-            
-class Actor(pygame.sprite.Sprite):
+    
+class Entity(pygame.sprite.Sprite):
     @classmethod
     def create_group(clazz, size, rect):
-        all_group = ActorGroup()
+        all_group = EntityGroup(clazz)
         for _ in range(size):
-            actor = clazz()
-            all_group.add(actor)
-            actor.rect.x = random.randrange(rect.x, rect.width - actor.rect.width)
-            actor.rect.y = random.randrange(rect.y, rect.height - actor.rect.height)
+            all_group.create_one(rect)
         return all_group
     
-    def __init__(self, color=WHITE, default_speed=4.0):
+    def __init__(self, color=WHITE):
         pygame.sprite.Sprite.__init__(self)
         self.create_image(color)
-        self.speed = default_speed
         
     def create_image(self, color):
         width = 10
         height = 10
         self.image = pygame.Surface([width, height],flags = pygame.SRCALPHA)
         self.image.fill(CLEAR)
-        pygame.draw.ellipse(self.image, color, self.image.get_rect())
+        self.draw_image(color)
         self.rect = self.image.get_rect()
+    
+    def draw_image(self, color):
+        pass
         
+class Actor(Entity):
+    def __init__(self, color=WHITE, default_speed=4.0):
+        Entity.__init__(self, color)
+        self.speed = default_speed
+    
+    def draw_image(self, color):
+        pygame.draw.ellipse(self.image, color, self.image.get_rect())
+      
     def update_pos(self, direc):
         dirx,diry = direc
         self.rect.x = round(self.rect.x + (dirx * self.speed))
@@ -97,7 +115,11 @@ class Actor(pygame.sprite.Sprite):
 class Zombie(Actor):
     def __init__(self):
         Actor.__init__(self, RED)
+        self.attack_wait = random.randint(25,50)
     def update(self, field):
+        if self.attack_wait > 0:
+            self.attack_wait = self.attack_wait - 1
+            return
         victim,dist = field.humans.closest_to(self)
         if victim is not None and dist < 200:
             self.update_pos(dir_to(self.rect.center, victim.rect.center))
@@ -108,14 +130,29 @@ class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
         self.current_dir = random_direction()
-        self.lifetime = xfrange(2 + (random.random() * 4),0,-0.0005)
+        self.reset_lifetime()
         
     def change_dir(self):
         self.current_dir = random_direction()
         
+    def eat_food(self, food):
+        if self.is_hungry():
+            food.consume()
+            self.reset_lifetime()
+            self.current_dir = opposite_dir(self.current_dir)
+    
+    def is_hungry(self):
+        return self.speed < 2.0
+    
+    def is_dead(self):
+        return self.speed == 0
+        
+    def reset_lifetime(self):
+        self.lifetime = xfrange(2 + (random.random() * 4),0,-0.0005)
+        
     def update(self, field):
         self.speed = next(self.lifetime, 0)
-        if 0 == self.speed:
+        if self.is_dead():
             self.kill()
             field.turn(self)
             return
@@ -132,17 +169,46 @@ class Human(Actor):
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * factor * dir_x), goto_y + (factor_dist * factor * dir_y))
-        
+        if self.is_hungry():
+            food, _ = field.food.closest_to(self)
+            if food is not None:
+                use_dir = False
+                direc = dir_to(self.rect.center, food.rect.center)
+                goto_x, goto_y = goto
+                dir_x, dir_y = direc
+                factor = (self.speed / 4) * 25
+                goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
+                
         go_to_dir = dir_to(self.rect.center, goto)
         if not use_dir:
             self.current_dir = go_to_dir
         self.update_pos(self.current_dir)
-    
 
+class Consumable(Entity):
+    def __init__(self, color=GREEN, amount=5):
+        Entity.__init__(self, color)
+        self.amount = amount
+        
+    def draw_image(self, color):
+        pygame.draw.rect(self.image, color, self.image.get_rect())
+    
+    def consume(self):
+        self.amount = self.amount - 1
+        if not self.has_more():
+            self.kill()
+    
+    def has_more(self):
+        return self.amount > 0
+        
+class Food(Consumable):
+    def __init__(self):
+        Consumable.__init__(self, GREEN, amount=25)
+    
 class Field(object):
     def __init__(self, rect):
         self.zombies = Zombie.create_group(5, rect)
         self.humans = Human.create_group(200, rect)
+        self.food = Food.create_group(4, rect)
         
     def register_events(self, events):
         events.every_do(200, lambda: self.zombies.update(self))
@@ -153,11 +219,22 @@ class Field(object):
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
             for human in dead:
                 self.turn(human)
+        for food in self.food:
+            eaten = pygame.sprite.spritecollide(food, self.humans, False, collided = pygame.sprite.collide_rect)
+            for human in eaten:
+                if food.has_more():
+                    human.eat_food(food)
         self.check_and_fix_edges(screen)
+        self.check_food(screen.get_rect())
+    
+    def check_food(self, rect):
+        while len(self.food) < 4:
+            self.food.create_one(rect)
         
     def draw(self, screen):
-        self.zombies.draw(screen)
+        self.food.draw(screen)
         self.humans.draw(screen)
+        self.zombies.draw(screen)
         
     def turn(self, human):
         zombie = Zombie()
