@@ -218,7 +218,7 @@ class Field(object):
     def __init__(self, rect):
         self.zombies = Zombie.create_group(5, rect)
         self.humans = Human.create_group(250, rect)
-        self.food = Food.create_group(4, rect)
+        self.food = Food.create_group(2, rect)
         
     def register_events(self, events):
         events.every_do(200, lambda: self.zombies.update(self))
@@ -240,7 +240,7 @@ class Field(object):
         self.check_food(screen.get_rect())
     
     def check_food(self, rect):
-        while len(self.food) < 4:
+        while len(self.food) < 2:
             self.food.create_one(rect)
         
     def draw(self, screen):
