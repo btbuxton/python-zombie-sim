@@ -28,8 +28,8 @@ def dir_to(origin, dest):
     return (math.cos(angle), math.sin(angle))
 
 def opposite_dir(direc):
-    x,y = direc
-    return (float(-1) * x, float(-1) * y)
+    negative_one = float(-1)
+    return map(lambda x: x * negative_one, direc)
     
 def random_direction():
     angle = math.radians(random.randrange(0, 360))
@@ -114,7 +114,7 @@ class Actor(Entity):
         
 class Zombie(Actor):
     def __init__(self):
-        Actor.__init__(self, RED)
+        Actor.__init__(self, RED, 2.0)
         self.attack_wait = random.randint(25,50)
     def update(self, field):
         if self.attack_wait > 0:
@@ -129,7 +129,7 @@ class Zombie(Actor):
 class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
-        self.current_dir = random_direction()
+        self.change_dir()
         self.reset_lifetime()
         
     def change_dir(self):
@@ -139,7 +139,7 @@ class Human(Actor):
         if self.is_hungry():
             food.consume()
             self.reset_lifetime()
-            self.current_dir = opposite_dir(self.current_dir)
+            self.change_dir()
     
     def is_hungry(self):
         return self.speed < 2.0
@@ -150,7 +150,12 @@ class Human(Actor):
     def reset_lifetime(self):
         self.lifetime = xfrange(2 + (random.random() * 4),0,-0.0005)
         
+    def alpha(self):
+        result = self.speed / 2.0
+        return min(result, 1)
+        
     def update(self, field):
+        self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
@@ -176,11 +181,11 @@ class Human(Actor):
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                factor = (self.speed / 4) * 25
+                factor = (self.speed / 2) * 25
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
                 
-        go_to_dir = dir_to(self.rect.center, goto)
         if not use_dir:
+            go_to_dir = dir_to(self.rect.center, goto)
             self.current_dir = go_to_dir
         self.update_pos(self.current_dir)
 
@@ -202,12 +207,12 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self):
-        Consumable.__init__(self, GREEN, amount=25)
+        Consumable.__init__(self, GREEN, amount=10)
     
 class Field(object):
     def __init__(self, rect):
         self.zombies = Zombie.create_group(5, rect)
-        self.humans = Human.create_group(200, rect)
+        self.humans = Human.create_group(500, rect)
         self.food = Food.create_group(4, rect)
         
     def register_events(self, events):

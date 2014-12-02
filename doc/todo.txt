@@ -1,0 +1,4 @@
+Figure out alpha so that can show hunger better
+Maximize window on start
+
+
