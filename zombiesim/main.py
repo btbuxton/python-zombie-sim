@@ -65,13 +65,16 @@ class Actor(pygame.sprite.Sprite):
     
     def __init__(self, color=WHITE, default_speed=4.0):
         pygame.sprite.Sprite.__init__(self)
+        self.create_image(color)
+        self.speed = default_speed
+        
+    def create_image(self, color):
         width = 10
         height = 10
         self.image = pygame.Surface([width, height],flags = pygame.SRCALPHA)
         self.image.fill(CLEAR)
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
         self.rect = self.image.get_rect()
-        self.speed = default_speed
         
     def update_pos(self, direc):
         dirx,diry = direc
@@ -87,6 +90,9 @@ class Actor(pygame.sprite.Sprite):
             self.rect.bottom = parent_rect.bottom
         if self.rect.bottom > parent_rect.bottom:
             self.rect.top = parent_rect.top
+            
+    def update(self, field):
+        pass
         
 class Zombie(Actor):
     def __init__(self):
@@ -102,13 +108,17 @@ class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
         self.current_dir = random_direction()
-        self.lifetime = xfrange(2 + (random.random() * 4),1,-0.0005)
+        self.lifetime = xfrange(2 + (random.random() * 4),0,-0.0005)
         
     def change_dir(self):
         self.current_dir = random_direction()
         
     def update(self, field):
-        self.speed = next(self.lifetime, 1)
+        self.speed = next(self.lifetime, 0)
+        if 0 == self.speed:
+            self.kill()
+            field.turn(self)
+            return
         goto = self.rect.center
         factor = float(1)
         use_dir = True
