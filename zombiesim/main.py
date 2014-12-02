@@ -51,12 +51,15 @@ class EntityGroup(pygame.sprite.Group):
         self.add(entity)
         entity.rect.x = random.randrange(rect.x, rect.width - entity.rect.width)
         entity.rect.y = random.randrange(rect.y, rect.height - entity.rect.height)
+        entity.added_to_group(self)
         
-    def closest_to(self, other):
+    def closest_to(self, other, to_include=lambda entity: True):
         curmin = sys.maxint
         curactor = None
         pos = other.rect.center
         for each in self.sprites():
+            if not to_include(each):
+                continue
             dist = distance(pos, each.rect.center)
             if dist < curmin:
                 curmin = dist
@@ -75,6 +78,9 @@ class Entity(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.create_image(color)
         
+    def added_to_group(self, group):
+        pass
+        
     def create_image(self, color):
         width = 10
         height = 10
@@ -91,13 +97,22 @@ class Actor(Entity):
         Entity.__init__(self, color)
         self.speed = default_speed
     
+    def added_to_group(self, group):
+        self.reset_pos()
+    
     def draw_image(self, color):
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
+        
+    def reset_pos(self):
+        self.x = float(self.rect.x)
+        self.y = float(self.rect.y)
       
     def update_pos(self, direc):
         dirx,diry = direc
-        self.rect.x = round(self.rect.x + (dirx * self.speed))
-        self.rect.y = round(self.rect.y + (diry * self.speed))
+        self.x = self.x + (dirx * self.speed)
+        self.y = self.y + (diry * self.speed)
+        self.rect.x = round(self.x)
+        self.rect.y = round(self.y)
         
     def hit_edge(self, parent_rect):
         if self.rect.left < parent_rect.left:
@@ -108,6 +123,7 @@ class Actor(Entity):
             self.rect.bottom = parent_rect.bottom
         if self.rect.bottom > parent_rect.bottom:
             self.rect.top = parent_rect.top
+        self.reset_pos()
             
     def update(self, field):
         pass
@@ -120,13 +136,17 @@ class Zombie(Actor):
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
-        victim,dist = field.humans.closest_to(self)
+        victim,dist = field.humans.closest_to(self ,field.killzone().contains)
         if victim is not None and dist < 200:
-            self.update_pos(dir_to(self.rect.center, victim.rect.center))
+            direc = dir_to(self.rect.center, victim.rect.center)
+            if  not field.rect.contains(victim):
+                direc = opposite_dir(direc)
+            self.update_pos(direc)
         else:
             self.update_pos(random_direction())
             
 class Human(Actor):
+    VISION = 50
     def __init__(self):
         Actor.__init__(self, PINK)
         self.change_dir()
@@ -148,7 +168,7 @@ class Human(Actor):
         return self.speed == 0
         
     def reset_lifetime(self):
-        self.lifetime = xfrange(2 + (random.random() * 2),0.5,-0.0001)
+        self.lifetime = xfrange(2 + (random.random() * 2),0,-0.0005)
         
     def alpha(self):
         result = self.speed / 2.0
@@ -166,10 +186,10 @@ class Human(Actor):
         use_dir = True
         for zombie in field.zombies.sprites():
             dist = distance(self.rect.center, zombie.rect.center)
-            if dist > 50:
+            if dist > self.VISION:
                 continue
             use_dir = False
-            factor_dist = 50 - dist
+            factor_dist = self.VISION - dist
             direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
             dir_x, dir_y = direc
@@ -181,7 +201,7 @@ class Human(Actor):
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                factor = (self.speed / 2) * 25
+                factor = (self.speed / 4) * self.VISION
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
                 
         if not use_dir:
@@ -212,19 +232,27 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self):
-        Consumable.__init__(self, GREEN, amount=50)
+        Consumable.__init__(self, GREEN, amount=100)
     
 class Field(object):
+    MAX_FOOD = 1
+    START_ZOMBIES = 5
+    START_HUMANS = 250
+    ZOMBIE_UPDATE_MS = 200
+    HUMAN_UPDATE_MS = 100
+    
     def __init__(self, rect):
-        self.zombies = Zombie.create_group(5, rect)
-        self.humans = Human.create_group(250, rect)
-        self.food = Food.create_group(2, rect)
+        self.zombies = Zombie.create_group(self.START_ZOMBIES, rect)
+        self.humans = Human.create_group(self.START_HUMANS, rect)
+        self.food = Food.create_group(self.MAX_FOOD, rect)
+        self.rect = rect
         
     def register_events(self, events):
-        events.every_do(200, lambda: self.zombies.update(self))
-        events.every_do(100, lambda: self.humans.update(self))
+        events.every_do(self.ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
+        events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
         
     def update(self, screen):
+        self.rect = screen.get_rect()
         all_dead = []
         for zombie in self.zombies:
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
@@ -236,12 +264,17 @@ class Field(object):
             for human in eaten:
                 if food.has_more():
                     human.eat_food(food)
-        self.check_and_fix_edges(screen)
-        self.check_food(screen.get_rect())
+        self.check_and_fix_edges()
+        self.check_food()
+        if self.all_dead():
+            self.__init__(self.rect)
     
-    def check_food(self, rect):
-        while len(self.food) < 2:
-            self.food.create_one(rect)
+    def all_dead(self):
+        return not self.humans
+    
+    def check_food(self):
+        while len(self.food) < self.MAX_FOOD:
+            self.food.create_one(self.rect)
         
     def draw(self, screen):
         self.food.draw(screen)
@@ -252,16 +285,19 @@ class Field(object):
         zombie = Zombie()
         zombie.rect = human.rect
         self.zombies.add(zombie)
+        zombie.added_to_group(self.zombies)
         
-    def check_and_fix_edges(self, screen):
+    def check_and_fix_edges(self):
         def check_and_fix(actor, parent_rect):
             if not parent_rect.contains(actor.rect):
                 actor.hit_edge(parent_rect)
-        rect = screen.get_rect()
         for each in self.zombies.sprites():
-            check_and_fix(each, rect)
+            check_and_fix(each, self.rect)
         for each in self.humans.sprites():
-            check_and_fix(each, rect)
+            check_and_fix(each, self.rect)
+            
+    def killzone(self):
+        return self.rect.inflate(0 - Human.VISION - 25, 0 - Human.VISION - 25)
         
 class EventLookup(object):
     def __init__(self):
