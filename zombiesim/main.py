@@ -183,12 +183,12 @@ class Human(Actor):
         self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
         goto = self.rect.center
         factor = float(1)
-        use_dir = True
+        #use_dir = True
         for zombie in field.zombies.sprites():
             dist = distance(self.rect.center, zombie.rect.center)
             if dist > self.VISION:
                 continue
-            use_dir = False
+            #use_dir = False
             factor_dist = self.VISION - dist
             direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
@@ -197,16 +197,16 @@ class Human(Actor):
         if self.is_hungry():
             food, _ = field.food.closest_to(self)
             if food is not None:
-                use_dir = False
+                #use_dir = False
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
                 factor = (self.speed / 4) * self.VISION
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
-                
-        if not use_dir:
-            go_to_dir = dir_to(self.rect.center, goto)
-            self.current_dir = go_to_dir
+        
+        goto = (goto[0] + (4.0 * self.current_dir[0]), goto[1] + (4.0 * self.current_dir[1]))
+        go_to_dir = dir_to(self.rect.center, goto)
+        self.current_dir = go_to_dir
         self.update_pos(self.current_dir)
         
     def hit_edge(self, parent_rect):
