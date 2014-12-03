@@ -345,7 +345,14 @@ def main():
         main.done = True
     main.done = False
     events.add(pygame.QUIT, mark_done)
-    
+    def key_pressed(event):
+        if pygame.K_ESCAPE == event.key:
+            mark_done(event)
+        if pygame.K_f == event.key:
+            flags = pygame.display.get_surface().get_flags()
+            if not flags & pygame.FULLSCREEN:
+                pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
+    events.add(pygame.KEYDOWN, key_pressed)
     while not main.done:
         events.process_events()
         screen = pygame.display.get_surface()
