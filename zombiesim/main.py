@@ -129,6 +129,7 @@ class Actor(Entity):
         pass
         
 class Zombie(Actor):
+    VISION = 100
     def __init__(self):
         Actor.__init__(self, RED, 2.0)
         self.attack_wait = random.randint(25,50)
@@ -137,7 +138,7 @@ class Zombie(Actor):
             self.attack_wait = self.attack_wait - 1
             return
         victim,dist = field.humans.closest_to(self ,field.killzone().contains)
-        if victim is not None and dist < 200:
+        if victim is not None and dist < self.VISION:
             direc = dir_to(self.rect.center, victim.rect.center)
             if  not field.rect.contains(victim):
                 direc = opposite_dir(direc)
@@ -182,32 +183,36 @@ class Human(Actor):
             return
         self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
         goto = self.rect.center
-        factor = float(1)
-        #use_dir = True
+        goto = self.run_from_zombies(field, goto)
+        goto = self.run_to_food(field, goto)
+        goto = (goto[0] + (4.0 * self.current_dir[0]), goto[1] + (4.0 * self.current_dir[1]))
+        go_to_dir = dir_to(self.rect.center, goto)
+        self.current_dir = go_to_dir
+        self.update_pos(self.current_dir)
+        
+    def run_from_zombies(self, field, goto):
+        factor= float(1)
         for zombie in field.zombies.sprites():
             dist = distance(self.rect.center, zombie.rect.center)
             if dist > self.VISION:
                 continue
-            #use_dir = False
             factor_dist = self.VISION - dist
             direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * factor * dir_x), goto_y + (factor_dist * factor * dir_y))
+        return goto
+    
+    def run_to_food(self, field, goto):
         if self.is_hungry():
             food, _ = field.food.closest_to(self)
             if food is not None:
-                #use_dir = False
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
                 factor = (self.speed / 4) * self.VISION
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
-        
-        goto = (goto[0] + (4.0 * self.current_dir[0]), goto[1] + (4.0 * self.current_dir[1]))
-        go_to_dir = dir_to(self.rect.center, goto)
-        self.current_dir = go_to_dir
-        self.update_pos(self.current_dir)
+        return  goto
         
     def hit_edge(self, parent_rect):
         x = random.randint(parent_rect.left, parent_rect.right)
@@ -323,20 +328,27 @@ class EventLookup(object):
 def main():
     pygame.init()
     fps = 60
-    screen_width = 960
-    screen_height = 720
-    screen = pygame.display.set_mode([screen_width, screen_height])
+    display_info = pygame.display.Info()
+    screen_width = int(display_info.current_w * 0.75)
+    screen_height = int(display_info.current_h * 0.75)
+    
+    pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF | pygame.RESIZABLE)
     pygame.display.set_caption("Zombie Simulation")
     clock = pygame.time.Clock()
-    field = Field(screen.get_rect())
+    field = Field(pygame.display.get_surface().get_rect())
     events = EventLookup()
     field.register_events(events)
+    def set_screen(event):
+        pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
+    events.add(pygame.VIDEORESIZE, set_screen)
     def mark_done(event):
         main.done = True
     main.done = False
     events.add(pygame.QUIT, mark_done)
+    
     while not main.done:
         events.process_events()
+        screen = pygame.display.get_surface()
         field.update(screen)
         
         screen.fill(BLACK)
