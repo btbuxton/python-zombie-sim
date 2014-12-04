@@ -7,14 +7,22 @@ import pygame
 import random
 import math
 import sys
+import time
 
-CLEAR = (0,   0,   0, 0)
-RED =   (255, 0,   0)
-BLACK = (0,   0,   0)
-WHITE = (255, 255, 255)
-PINK =  (255, 192, 192)
-GREEN = (0,   255,   0)
+CLEAR =      (0,   0,   0, 0)
+RED =        (255, 0,   0)
+BLACK =      (0,   0,   0)
+WHITE =      (255, 255, 255)
+PINK =       (255, 192, 192)
+GREEN =      (0,   255, 0)
+DARK_GREEN = (0,   8, 0)
 
+def str_diff_time(begin):
+    end = int(round(time.time() - begin))
+    rest, seconds = divmod(end, 60)
+    hours, minutes = divmod(rest, 60)
+    return '{0} hours, {1} minutes, {2} seconds'.format(hours, minutes, seconds)
+    
 def distance(origin, dest):
     originx,originy = origin
     destx,desty = dest
@@ -111,8 +119,8 @@ class Actor(Entity):
         dirx,diry = direc
         self.x = self.x + (dirx * self.speed)
         self.y = self.y + (diry * self.speed)
-        self.rect.x = round(self.x)
-        self.rect.y = round(self.y)
+        self.rect.x = int(round(self.x))
+        self.rect.y = int(round(self.y))
         
     def hit_edge(self, parent_rect):
         if self.rect.left < parent_rect.left:
@@ -129,7 +137,7 @@ class Actor(Entity):
         pass
         
 class Zombie(Actor):
-    VISION = 100
+    VISION = 200
     def __init__(self):
         Actor.__init__(self, RED, 2.0)
         self.attack_wait = random.randint(25,50)
@@ -137,7 +145,7 @@ class Zombie(Actor):
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
-        victim,dist = field.humans.closest_to(self ,field.killzone().contains)
+        victim,dist = field.humans.closest_to(self ,field.killzone.contains)
         if victim is not None and dist < self.VISION:
             direc = dir_to(self.rect.center, victim.rect.center)
             if  not field.rect.contains(victim):
@@ -147,7 +155,7 @@ class Zombie(Actor):
             self.update_pos(random_direction())
             
 class Human(Actor):
-    VISION = 50
+    VISION = 100
     def __init__(self):
         Actor.__init__(self, PINK)
         self.change_dir()
@@ -215,9 +223,10 @@ class Human(Actor):
         return  goto
         
     def hit_edge(self, parent_rect):
-        x = random.randint(parent_rect.left, parent_rect.right)
-        y = random.randint(parent_rect.top, parent_rect.bottom)
-        self.current_dir = dir_to(self.rect.center, (x,y))
+        #x = random.randint(parent_rect.left, parent_rect.right)
+        #y = random.randint(parent_rect.top, parent_rect.bottom)
+        #self.current_dir = dir_to(self.rect.center, (x,y))
+        Actor.hit_edge(self, parent_rect)
 
 class Consumable(Entity):
     def __init__(self, color=GREEN, amount=5):
@@ -237,20 +246,28 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self):
-        Consumable.__init__(self, GREEN, amount=100)
+        Consumable.__init__(self, GREEN, amount=50)
     
 class Field(object):
-    MAX_FOOD = 1
+    MAX_FOOD = 2
     START_ZOMBIES = 5
     START_HUMANS = 250
     ZOMBIE_UPDATE_MS = 200
     HUMAN_UPDATE_MS = 100
     
-    def __init__(self, rect):
-        self.zombies = Zombie.create_group(self.START_ZOMBIES, rect)
-        self.humans = Human.create_group(self.START_HUMANS, rect)
-        self.food = Food.create_group(self.MAX_FOOD, rect)
+    def __init__(self):
+        pass
+    
+    def start(self, rect):
         self.rect = rect
+        self.killzone = self.create_killzone()
+        self.zombies = Zombie.create_group(self.START_ZOMBIES, self.killzone)
+        self.humans = Human.create_group(self.START_HUMANS, self.killzone)
+        self.food = Food.create_group(self.MAX_FOOD, self.killzone)
+        self.started = time.time()
+        
+    def stop(self):
+        print("To all die: " + str_diff_time(self.started))
         
     def register_events(self, events):
         events.every_do(self.ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
@@ -258,6 +275,7 @@ class Field(object):
         
     def update(self, screen):
         self.rect = screen.get_rect()
+        self.killzone = self.create_killzone()
         all_dead = []
         for zombie in self.zombies:
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
@@ -272,16 +290,18 @@ class Field(object):
         self.check_and_fix_edges()
         self.check_food()
         if self.all_dead():
-            self.__init__(self.rect)
+            self.stop()
+            self.start(self.rect)
     
     def all_dead(self):
         return not self.humans
     
     def check_food(self):
         while len(self.food) < self.MAX_FOOD:
-            self.food.create_one(self.rect)
+            self.food.create_one(self.killzone)
         
     def draw(self, screen):
+        screen.fill(DARK_GREEN, self.killzone)
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
@@ -301,8 +321,8 @@ class Field(object):
         for each in self.humans.sprites():
             check_and_fix(each, self.rect)
             
-    def killzone(self):
-        return self.rect.inflate(0 - Human.VISION - 25, 0 - Human.VISION - 25)
+    def create_killzone(self):
+        return self.rect.inflate(0 - Human.VISION, 0 - Human.VISION)
         
 class EventLookup(object):
     def __init__(self):
@@ -312,6 +332,9 @@ class EventLookup(object):
     def add(self, event_type, func=lambda event: None):
         self.__mapping__[event_type] = func
         
+    def func_for(self, event_type):
+        return self.__mapping__.get(event_type, lambda event: None)
+            
     def next_event_type(self):
         self.next_event_id = self.next_event_id + 1
         return self.next_event_id
@@ -335,24 +358,36 @@ def main():
     pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF | pygame.RESIZABLE)
     pygame.display.set_caption("Zombie Simulation")
     clock = pygame.time.Clock()
-    field = Field(pygame.display.get_surface().get_rect())
+    field = Field()
     events = EventLookup()
     field.register_events(events)
     def set_screen(event):
         pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
     events.add(pygame.VIDEORESIZE, set_screen)
-    def mark_done(event):
-        main.done = True
-    main.done = False
-    events.add(pygame.QUIT, mark_done)
     def key_pressed(event):
         if pygame.K_ESCAPE == event.key:
-            mark_done(event)
+            events.func_for(pygame.QUIT)(event)
         if pygame.K_f == event.key:
             flags = pygame.display.get_surface().get_flags()
             if not flags & pygame.FULLSCREEN:
                 pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
     events.add(pygame.KEYDOWN, key_pressed)
+    def mouse_down(event):
+        print(event)
+    events.add(pygame.MOUSEBUTTONDOWN, mouse_down)
+    def mouse_move(event):
+        #print(event)
+        pass
+    events.add(pygame.MOUSEMOTION, mouse_move)
+    def mouse_up(event):
+        print(event)
+    events.add(pygame.MOUSEBUTTONUP, mouse_up)
+    def mark_done(event):
+        main.done = True
+    main.done = False
+    events.add(pygame.QUIT, mark_done)
+    
+    field.start(pygame.display.get_surface().get_rect())
     while not main.done:
         events.process_events()
         screen = pygame.display.get_surface()
