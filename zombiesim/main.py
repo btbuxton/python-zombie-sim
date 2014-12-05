@@ -147,6 +147,7 @@ class Zombie(Actor):
         Actor.__init__(self, RED, 2.0)
         self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2,self.ATTACK_WAIT_MAX)
         self.aimless = 0
+        self.last_dir = None
         
     def update(self, field):
         if self.aimless > 0:
@@ -157,12 +158,15 @@ class Zombie(Actor):
             self.attack_wait = self.attack_wait - 1
             return
         if not field.killzone.contains(self):
-            self.current_dir = dir_to(self.rect.center, field.rect.center)
+            if self.last_dir:
+                self.current_dir = opposite_dir(self.last_dir)
+            else:
+                self.current_dir = dir_to(self.rect.center, field.rect.center)
             Actor.update(self,field)
-            self.aimless = Human.VISION
+            self.aimless = Zombie.VISION
             self.attack_wait = self.ATTACK_WAIT_MAX
             return
-        victim,dist = field.humans.closest_to(self ,field.killzone.contains)
+        victim,dist = field.humans.closest_to(self) # ,field.killzone.contains)
         do_change = lambda: None
         if victim is not None and dist < self.VISION:
             direc = dir_to(self.rect.center, victim.rect.center)
@@ -170,6 +174,7 @@ class Zombie(Actor):
                 direc = opposite_dir(direc)
             self.current_dir = direc
             do_change = self.change_dir
+        self.last_dir = self.current_dir
         Actor.update(self,field)
         do_change() #this is so zombie changes directions when there is no longer a human
             
@@ -287,6 +292,10 @@ class Field(object):
         
     def stop(self):
         print("To all die: " + str_diff_time(self.started))
+        
+    def restart(self):
+        self.stop()
+        self.start(self.rect)
         
     def register_events(self, events):
         events.every_do(self.ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
@@ -434,12 +443,14 @@ def main():
         pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
     events.add(pygame.VIDEORESIZE, set_screen)
     def key_pressed(event):
-        if pygame.K_ESCAPE == event.key:
+        if pygame.K_ESCAPE is event.key:
             events.func_for(pygame.QUIT)(event)
-        if pygame.K_f == event.key:
+        if pygame.K_f is event.key:
             flags = pygame.display.get_surface().get_flags()
             if not flags & pygame.FULLSCREEN:
                 pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
+        if pygame.K_r is event.key:
+            field.restart()
     events.add(pygame.KEYDOWN, key_pressed)
     def mouse_down(event):
         field.mouse_down(event)
