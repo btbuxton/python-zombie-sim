@@ -15,7 +15,7 @@ BLACK =      (0,   0,   0)
 WHITE =      (255, 255, 255)
 PINK =       (255, 192, 192)
 GREEN =      (0,   255, 0)
-DARK_GREEN = (0,   8, 0)
+DARK_GREEN = (0,   16, 0)
 
 def str_diff_time(begin):
     end = int(round(time.time() - begin))
@@ -104,6 +104,7 @@ class Actor(Entity):
     def __init__(self, color=WHITE, default_speed=4.0):
         Entity.__init__(self, color)
         self.speed = default_speed
+        self.change_dir()
     
     def added_to_group(self, group):
         self.reset_pos()
@@ -132,37 +133,51 @@ class Actor(Entity):
         if self.rect.bottom > parent_rect.bottom:
             self.rect.top = parent_rect.top
         self.reset_pos()
+        
+    def change_dir(self):
+        self.current_dir = random_direction()
             
     def update(self, field):
-        pass
+        self.update_pos(self.current_dir)
         
 class Zombie(Actor):
-    VISION = 200
+    VISION = 250
+    ATTACK_WAIT_MAX = 50
     def __init__(self):
         Actor.__init__(self, RED, 2.0)
-        self.attack_wait = random.randint(25,50)
+        self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2,self.ATTACK_WAIT_MAX)
+        self.aimless = 0
+        
     def update(self, field):
+        if self.aimless > 0:
+            self.aimless = self.aimless - 1
+            Actor.update(self,field)
+            return
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
+        if not field.killzone.contains(self):
+            self.current_dir = dir_to(self.rect.center, field.rect.center)
+            Actor.update(self,field)
+            self.aimless = Human.VISION
+            self.attack_wait = self.ATTACK_WAIT_MAX
+            return
         victim,dist = field.humans.closest_to(self ,field.killzone.contains)
+        do_change = lambda: None
         if victim is not None and dist < self.VISION:
             direc = dir_to(self.rect.center, victim.rect.center)
             if  not field.rect.contains(victim):
                 direc = opposite_dir(direc)
-            self.update_pos(direc)
-        else:
-            self.update_pos(random_direction())
+            self.current_dir = direc
+            do_change = self.change_dir
+        Actor.update(self,field)
+        do_change() #this is so zombie changes directions when there is no longer a human
             
 class Human(Actor):
     VISION = 100
     def __init__(self):
         Actor.__init__(self, PINK)
-        self.change_dir()
         self.reset_lifetime()
-        
-    def change_dir(self):
-        self.current_dir = random_direction()
         
     def eat_food(self, food):
         if self.is_hungry():
@@ -193,10 +208,10 @@ class Human(Actor):
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
-        goto = (goto[0] + (4.0 * self.current_dir[0]), goto[1] + (4.0 * self.current_dir[1]))
+        goto = (goto[0] + (1 * self.current_dir[0]), goto[1] + (1 * self.current_dir[1]))
         go_to_dir = dir_to(self.rect.center, goto)
         self.current_dir = go_to_dir
-        self.update_pos(self.current_dir)
+        Actor.update(self,field)
         
     def run_from_zombies(self, field, goto):
         factor= float(1)
@@ -218,7 +233,7 @@ class Human(Actor):
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                factor = (self.speed / 4) * self.VISION
+                factor = (self.speed / 3) * self.VISION
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
         return  goto
         
@@ -250,13 +265,17 @@ class Food(Consumable):
     
 class Field(object):
     MAX_FOOD = 2
-    START_ZOMBIES = 5
+    START_ZOMBIES = 1
     START_HUMANS = 250
     ZOMBIE_UPDATE_MS = 200
     HUMAN_UPDATE_MS = 100
+    SEC = 1000
+    MINUTE = 60 * SEC
     
     def __init__(self):
-        pass
+        self.under_mouse = pygame.sprite.Group()
+        self.on_mouse_up = lambda pos: None
+        self.on_mouse_move = lambda pos: None
     
     def start(self, rect):
         self.rect = rect
@@ -272,6 +291,10 @@ class Field(object):
     def register_events(self, events):
         events.every_do(self.ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
         events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
+        events.every_do(5 * self.MINUTE, self.print_status)
+        
+    def print_status(self):
+        print 'Update: humans: {0} zombies: {1}'.format(len(self.humans), len(self.zombies))
         
     def update(self, screen):
         self.rect = screen.get_rect()
@@ -305,6 +328,7 @@ class Field(object):
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
+        self.under_mouse.draw(screen)
         
     def turn(self, human):
         zombie = Zombie()
@@ -322,8 +346,53 @@ class Field(object):
             check_and_fix(each, self.rect)
             
     def create_killzone(self):
-        return self.rect.inflate(0 - Human.VISION, 0 - Human.VISION)
+        return self.rect.inflate(0 - Human.VISION * 1.5, 0 - Human.VISION * 1.5)
+    
+    def mouse_down(self,event):
+        if event.button is not 1:
+            return
+        pos = event.pos
+        actor = self.actor_under(pos)
+        if actor is None:
+            return
+        groups = actor.groups()
+        for group in groups:
+            group.remove(actor)
+        self.under_mouse.add(actor)
+        def on_up(pos, groups = groups, actor = actor):
+            actor.rect.center = pos 
+            actor.reset_pos()
+            self.under_mouse.remove(actor)
+            for groups in groups:
+                groups.add(actor)
+        self.on_mouse_up = on_up
+        def on_move(pos, actor = actor):
+            actor.rect.center = pos
+        self.on_mouse_move = on_move
         
+    def mouse_move(self, event):
+        if not event.buttons[0]:
+            return
+        pos = event.pos
+        self.on_mouse_move(pos)
+    
+    def mouse_up(self, event):
+        if event.button is not 1:
+            return
+        pos = event.pos
+        self.on_mouse_up(pos)
+        self.on_mouse_up = lambda pos: None
+        self.on_mouse_move = lambda pos: None
+    
+    def actor_under(self, pos):
+        for each in self.humans:
+            if each.rect.collidepoint(pos):
+                return each
+        for each in self.zombies:
+            if each.rect.collidepoint(pos):
+                return each
+        return None
+    
 class EventLookup(object):
     def __init__(self):
         self.__mapping__= {}
@@ -373,14 +442,13 @@ def main():
                 pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
     events.add(pygame.KEYDOWN, key_pressed)
     def mouse_down(event):
-        print(event)
+        field.mouse_down(event)
     events.add(pygame.MOUSEBUTTONDOWN, mouse_down)
     def mouse_move(event):
-        #print(event)
-        pass
+        field.mouse_move(event)
     events.add(pygame.MOUSEMOTION, mouse_move)
     def mouse_up(event):
-        print(event)
+        field.mouse_up(event)
     events.add(pygame.MOUSEBUTTONUP, mouse_up)
     def mark_done(event):
         main.done = True
