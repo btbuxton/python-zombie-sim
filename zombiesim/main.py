@@ -147,7 +147,6 @@ class Zombie(Actor):
         Actor.__init__(self, RED, 2.0)
         self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2,self.ATTACK_WAIT_MAX)
         self.aimless = 0
-        self.last_dir = None
         
     def update(self, field):
         if self.aimless > 0:
@@ -158,15 +157,15 @@ class Zombie(Actor):
             self.attack_wait = self.attack_wait - 1
             return
         if not field.killzone.contains(self):
-            if self.last_dir:
-                self.current_dir = opposite_dir(self.last_dir)
-            else:
-                self.current_dir = dir_to(self.rect.center, field.rect.center)
+            x = random.randint(field.killzone.left, field.killzone.right)
+            y = random.randint(field.killzone.top, field.killzone.bottom)
+            self.current_dir = dir_to(self.rect.center, (x,y))
+            #self.current_dir = dir_to(self.rect.center, field.killzone.center)
             Actor.update(self,field)
             self.aimless = Zombie.VISION
             self.attack_wait = self.ATTACK_WAIT_MAX
             return
-        victim,dist = field.humans.closest_to(self) # ,field.killzone.contains)
+        victim,dist = field.humans.closest_to(self) #, field.killzone.contains)
         do_change = lambda: None
         if victim is not None and dist < self.VISION:
             direc = dir_to(self.rect.center, victim.rect.center)
@@ -174,7 +173,6 @@ class Zombie(Actor):
                 direc = opposite_dir(direc)
             self.current_dir = direc
             do_change = self.change_dir
-        self.last_dir = self.current_dir
         Actor.update(self,field)
         do_change() #this is so zombie changes directions when there is no longer a human
             
@@ -183,6 +181,7 @@ class Human(Actor):
     def __init__(self):
         Actor.__init__(self, PINK)
         self.reset_lifetime()
+        self.freeze = 0
         
     def eat_food(self, food):
         if self.is_hungry():
@@ -204,6 +203,9 @@ class Human(Actor):
         return min(result, 1)
         
     def update(self, field):
+        #if self.freeze > 0:
+        #    self.freeze = self.freeze - 1
+        #    return
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
@@ -219,16 +221,15 @@ class Human(Actor):
         Actor.update(self,field)
         
     def run_from_zombies(self, field, goto):
-        factor= float(1)
         for zombie in field.zombies.sprites():
             dist = distance(self.rect.center, zombie.rect.center)
-            if dist > self.VISION:
+            if dist >= self.VISION:
                 continue
-            factor_dist = self.VISION - dist
+            factor_dist = float(self.VISION - dist)
             direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
             dir_x, dir_y = direc
-            goto = (goto_x + (factor_dist * factor * dir_x), goto_y + (factor_dist * factor * dir_y))
+            goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
         return goto
     
     def run_to_food(self, field, goto):
@@ -238,15 +239,28 @@ class Human(Actor):
                 direc = dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                factor = (self.speed / 3) * self.VISION
+                factor = float(self.speed) / 4 * self.VISION
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
         return  goto
         
     def hit_edge(self, parent_rect):
+        if self.rect.left < parent_rect.left:
+            self.rect.left = parent_rect.left
+        if self.rect.right > parent_rect.right:
+            self.rect.right = parent_rect.right
+        if self.rect.top < parent_rect.top:
+            self.rect.top = parent_rect.top
+        if self.rect.bottom > parent_rect.bottom:
+            self.rect.bottom = parent_rect.bottom
+        self.reset_pos()
+        #Actor.hit_edge(self, parent_rect)
+        #self.current_dir = dir_to(self.rect.center, parent_rect.center)
+        self.current_dir = opposite_dir(self.current_dir)
+        self.freeze = 50
         #x = random.randint(parent_rect.left, parent_rect.right)
         #y = random.randint(parent_rect.top, parent_rect.bottom)
         #self.current_dir = dir_to(self.rect.center, (x,y))
-        Actor.hit_edge(self, parent_rect)
+        #self.current_dir = (0,0)
 
 class Consumable(Entity):
     def __init__(self, color=GREEN, amount=5):
