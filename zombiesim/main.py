@@ -5,50 +5,11 @@ Created on Nov 29, 2014
 '''
 import pygame
 import random
-import math
 import sys
 import time
+import zombiesim.util as zutil
+import zombiesim.colors as zcolors
 
-CLEAR =      (0,   0,   0, 0)
-RED =        (255, 0,   0)
-BLACK =      (0,   0,   0)
-WHITE =      (255, 255, 255)
-PINK =       (255, 192, 192)
-GREEN =      (0,   255, 0)
-DARK_GREEN = (0,   16, 0)
-
-def str_diff_time(begin):
-    end = int(round(time.time() - begin))
-    rest, seconds = divmod(end, 60)
-    hours, minutes = divmod(rest, 60)
-    return '{0} hours, {1} minutes, {2} seconds'.format(hours, minutes, seconds)
-    
-def distance(origin, dest):
-    originx,originy = origin
-    destx,desty = dest
-    return math.sqrt(((originy - desty) ** 2) + ((originx - destx) **2))
-
-def dir_to(origin, dest):
-    originx,originy = origin
-    destx,desty = dest
-    diffx, diffy = destx - originx, desty - originy
-    angle = math.atan2(diffy, diffx)
-    return (math.cos(angle), math.sin(angle))
-
-def opposite_dir(direc):
-    negative_one = float(-1)
-    return map(lambda x: x * negative_one, direc)
-    
-def random_direction():
-    angle = math.radians(random.randrange(0, 360))
-    return (math.cos(angle), math.sin(angle))
-
-def xfrange(start, stop, step):
-    current = start
-    while ((step > 0 and current < stop) or (step < 0 and current > stop)):
-        yield current
-        current = current + step
-    
 class EntityGroup(pygame.sprite.Group):
     def __init__(self, clazz):
         pygame.sprite.Group.__init__(self)
@@ -68,7 +29,7 @@ class EntityGroup(pygame.sprite.Group):
         for each in self.sprites():
             if not to_include(each):
                 continue
-            dist = distance(pos, each.rect.center)
+            dist = zutil.distance(pos, each.rect.center)
             if dist < curmin:
                 curmin = dist
                 curactor = each
@@ -82,7 +43,7 @@ class Entity(pygame.sprite.Sprite):
             all_group.create_one(rect)
         return all_group
     
-    def __init__(self, color=WHITE):
+    def __init__(self, color=zcolors.WHITE):
         pygame.sprite.Sprite.__init__(self)
         self.create_image(color)
         
@@ -93,7 +54,7 @@ class Entity(pygame.sprite.Sprite):
         width = 10
         height = 10
         self.image = pygame.Surface([width, height],flags = pygame.SRCALPHA)
-        self.image.fill(CLEAR)
+        self.image.fill(zcolors.CLEAR)
         self.draw_image(color)
         self.rect = self.image.get_rect()
     
@@ -101,7 +62,7 @@ class Entity(pygame.sprite.Sprite):
         pass
         
 class Actor(Entity):
-    def __init__(self, color=WHITE, default_speed=4.0):
+    def __init__(self, color=zcolors.WHITE, default_speed=4.0):
         Entity.__init__(self, color)
         self.speed = default_speed
         self.change_dir()
@@ -135,7 +96,7 @@ class Actor(Entity):
         self.reset_pos()
         
     def change_dir(self):
-        self.current_dir = random_direction()
+        self.current_dir = zutil.random_direction()
             
     def update(self, field):
         self.update_pos(self.current_dir)
@@ -144,7 +105,7 @@ class Zombie(Actor):
     VISION = 250
     ATTACK_WAIT_MAX = 50
     def __init__(self):
-        Actor.__init__(self, RED, 2.0)
+        Actor.__init__(self, zcolors.RED, 2.0)
         self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2,self.ATTACK_WAIT_MAX)
         self.aimless = 0
         
@@ -159,7 +120,7 @@ class Zombie(Actor):
         if not field.killzone.contains(self):
             x = random.randint(field.killzone.left, field.killzone.right)
             y = random.randint(field.killzone.top, field.killzone.bottom)
-            self.current_dir = dir_to(self.rect.center, (x,y))
+            self.current_dir = zutil.dir_to(self.rect.center, (x,y))
             #self.current_dir = dir_to(self.rect.center, field.killzone.center)
             Actor.update(self,field)
             self.aimless = Zombie.VISION
@@ -168,9 +129,9 @@ class Zombie(Actor):
         victim,dist = field.humans.closest_to(self) #, field.killzone.contains)
         do_change = lambda: None
         if victim is not None and dist < self.VISION:
-            direc = dir_to(self.rect.center, victim.rect.center)
+            direc = zutil.dir_to(self.rect.center, victim.rect.center)
             if  not field.rect.contains(victim):
-                direc = opposite_dir(direc)
+                direc = zutil.opposite_dir(direc)
             self.current_dir = direc
             do_change = self.change_dir
         Actor.update(self,field)
@@ -179,7 +140,7 @@ class Zombie(Actor):
 class Human(Actor):
     VISION = 100
     def __init__(self):
-        Actor.__init__(self, PINK)
+        Actor.__init__(self, zcolors.PINK)
         self.reset_lifetime()
         self.freeze = 0
         
@@ -196,7 +157,7 @@ class Human(Actor):
         return self.speed == 0
         
     def reset_lifetime(self):
-        self.lifetime = xfrange(2 + (random.random() * 2),0,-0.0005)
+        self.lifetime = zutil.xfrange(2 + (random.random() * 2),0,-0.0005)
         
     def alpha(self):
         result = self.speed / 2.0
@@ -211,22 +172,22 @@ class Human(Actor):
             self.kill()
             field.turn(self)
             return
-        self.draw_image(map(lambda x: int(x * self.alpha()), PINK))
+        self.draw_image(map(lambda x: int(x * self.alpha()), zcolors.PINK))
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
         goto = (goto[0] + (1 * self.current_dir[0]), goto[1] + (1 * self.current_dir[1]))
-        go_to_dir = dir_to(self.rect.center, goto)
+        go_to_dir = zutil.dir_to(self.rect.center, goto)
         self.current_dir = go_to_dir
         Actor.update(self,field)
         
     def run_from_zombies(self, field, goto):
         for zombie in field.zombies.sprites():
-            dist = distance(self.rect.center, zombie.rect.center)
+            dist = zutil.distance(self.rect.center, zombie.rect.center)
             if dist >= self.VISION:
                 continue
             factor_dist = float(self.VISION - dist)
-            direc = opposite_dir(dir_to(self.rect.center, zombie.rect.center))
+            direc = zutil.opposite_dir(zutil.dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
@@ -236,7 +197,7 @@ class Human(Actor):
         if self.is_hungry():
             food, _ = field.food.closest_to(self)
             if food is not None:
-                direc = dir_to(self.rect.center, food.rect.center)
+                direc = zutil.dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
                 factor = float(self.speed) / 4 * self.VISION
@@ -255,7 +216,7 @@ class Human(Actor):
         self.reset_pos()
         #Actor.hit_edge(self, parent_rect)
         #self.current_dir = dir_to(self.rect.center, parent_rect.center)
-        self.current_dir = opposite_dir(self.current_dir)
+        self.current_dir = zutil.opposite_dir(self.current_dir)
         self.freeze = 50
         #x = random.randint(parent_rect.left, parent_rect.right)
         #y = random.randint(parent_rect.top, parent_rect.bottom)
@@ -263,7 +224,7 @@ class Human(Actor):
         #self.current_dir = (0,0)
 
 class Consumable(Entity):
-    def __init__(self, color=GREEN, amount=5):
+    def __init__(self, color=zcolors.GREEN, amount=5):
         Entity.__init__(self, color)
         self.amount = amount
         
@@ -280,7 +241,7 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self):
-        Consumable.__init__(self, GREEN, amount=50)
+        Consumable.__init__(self, zcolors.GREEN, amount=50)
     
 class Field(object):
     MAX_FOOD = 2
@@ -305,7 +266,7 @@ class Field(object):
         self.started = time.time()
         
     def stop(self):
-        print("To all die: " + str_diff_time(self.started))
+        print("To all die: " + zutil.str_diff_time(self.started))
         
     def restart(self):
         self.stop()
@@ -347,7 +308,7 @@ class Field(object):
             self.food.create_one(self.killzone)
         
     def draw(self, screen):
-        screen.fill(DARK_GREEN, self.killzone)
+        screen.fill(zcolors.DARK_GREEN, self.killzone)
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
@@ -486,7 +447,7 @@ def main():
         screen = pygame.display.get_surface()
         field.update(screen)
         
-        screen.fill(BLACK)
+        screen.fill(zcolors.BLACK)
         field.draw(screen)
         pygame.display.flip()
         
