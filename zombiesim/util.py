@@ -9,6 +9,7 @@ Various utility functions that don't fit into objects yet
 import math
 import time
 import random
+import pygame
 
 def str_diff_time(begin):
     end = int(round(time.time() - begin))
@@ -41,3 +42,9 @@ def xfrange(start, stop, step):
     while ((step > 0 and current < stop) or (step < 0 and current > stop)):
         yield current
         current = current + step
+
+def make_full_screen():
+    display_info = pygame.display.Info()
+    flags = pygame.display.get_surface().get_flags()
+    if not flags & pygame.FULLSCREEN:
+        pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)

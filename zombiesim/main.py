@@ -7,6 +7,7 @@ import pygame
 import random
 import sys
 import time
+import itertools
 import zombiesim.util as zutil
 import zombiesim.colors as zcolors
 
@@ -59,6 +60,9 @@ class Entity(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
     
     def draw_image(self, color):
+        pass
+    
+    def reset_pos(self):
         pass
         
 class Actor(Entity):
@@ -276,6 +280,10 @@ class Field(object):
         events.every_do(self.ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
         events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
         events.every_do(5 * self.MINUTE, self.print_status)
+        events.add_key_press(pygame.K_r, lambda _: self.restart())
+        events.add(pygame.MOUSEBUTTONDOWN, self.mouse_down)
+        events.add(pygame.MOUSEMOTION, self.mouse_move)
+        events.add(pygame.MOUSEBUTTONUP, self.mouse_up)
         
     def print_status(self):
         print 'Update: humans: {0} zombies: {1}'.format(len(self.humans), len(self.zombies))
@@ -336,22 +344,27 @@ class Field(object):
         if event.button is not 1:
             return
         pos = event.pos
-        actor = self.actor_under(pos)
-        if actor is None:
-            return
-        groups = actor.groups()
-        for group in groups:
-            group.remove(actor)
-        self.under_mouse.add(actor)
-        def on_up(pos, groups = groups, actor = actor):
-            actor.rect.center = pos 
-            actor.reset_pos()
-            self.under_mouse.remove(actor)
-            for groups in groups:
-                groups.add(actor)
+        entities = self.entities_under(pos)
+        for entity in entities:
+            groups = entity.groups()
+            entity._mouse_groups=[]
+            for group in groups:
+                group.remove(entity)
+                entity._mouse_groups.append(group)
+            self.under_mouse.add(entity)
+        def on_up(pos, entities = entities):
+            for entity in entities:
+                entity.rect.center = pos 
+                entity.reset_pos()
+                self.under_mouse.remove(entity)
+                for group in entity._mouse_groups:
+                    group.add(entity)
+                del entity._mouse_groups
         self.on_mouse_up = on_up
-        def on_move(pos, actor = actor):
-            actor.rect.center = pos
+        def on_move(pos, entities = entities):
+            for entity in entities:
+                entity.rect.center = pos
+                entity.reset_pos()
         self.on_mouse_move = on_move
         
     def mouse_move(self, event):
@@ -368,25 +381,28 @@ class Field(object):
         self.on_mouse_up = lambda pos: None
         self.on_mouse_move = lambda pos: None
     
-    def actor_under(self, pos):
-        for each in self.humans:
-            if each.rect.collidepoint(pos):
-                return each
-        for each in self.zombies:
-            if each.rect.collidepoint(pos):
-                return each
-        return None
+    def entities_under(self, pos):
+        return [each for each in itertools.chain(self.humans, self.zombies, self.food)
+            if each.rect.collidepoint(pos)]
     
 class EventLookup(object):
     def __init__(self):
-        self.__mapping__= {}
+        self._mapping = {}
+        self._keys = {}
         self.next_event_id = pygame.USEREVENT
         
     def add(self, event_type, func=lambda event: None):
-        self.__mapping__[event_type] = func
+        self._mapping[event_type] = func
+        
+    def add_key_press(self, key, func=lambda event: None):
+        def key_func(event):
+            evt_key = event.key
+            self._keys.get(evt_key, lambda event: None)(event)
+        self._keys[key] = func
+        self.add(pygame.KEYDOWN, key_func)
         
     def func_for(self, event_type):
-        return self.__mapping__.get(event_type, lambda event: None)
+        return self._mapping.get(event_type, lambda event: None)
             
     def next_event_type(self):
         self.next_event_id = self.next_event_id + 1
@@ -399,7 +415,7 @@ class EventLookup(object):
         
     def process_events(self):
         for event in pygame.event.get():
-            self.__mapping__.get(event.type, lambda event: None)(event)
+            self._mapping.get(event.type, lambda event: None)(event)
 
 def main():
     pygame.init()
@@ -410,38 +426,23 @@ def main():
     
     pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF | pygame.RESIZABLE)
     pygame.display.set_caption("Zombie Simulation")
-    clock = pygame.time.Clock()
-    field = Field()
+
     events = EventLookup()
-    field.register_events(events)
-    def set_screen(event):
-        pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
-    events.add(pygame.VIDEORESIZE, set_screen)
-    def key_pressed(event):
-        if pygame.K_ESCAPE is event.key:
-            events.func_for(pygame.QUIT)(event)
-        if pygame.K_f is event.key:
-            flags = pygame.display.get_surface().get_flags()
-            if not flags & pygame.FULLSCREEN:
-                pygame.display.set_mode((display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
-        if pygame.K_r is event.key:
-            field.restart()
-    events.add(pygame.KEYDOWN, key_pressed)
-    def mouse_down(event):
-        field.mouse_down(event)
-    events.add(pygame.MOUSEBUTTONDOWN, mouse_down)
-    def mouse_move(event):
-        field.mouse_move(event)
-    events.add(pygame.MOUSEMOTION, mouse_move)
-    def mouse_up(event):
-        field.mouse_up(event)
-    events.add(pygame.MOUSEBUTTONUP, mouse_up)
     def mark_done(event):
         main.done = True
     main.done = False
     events.add(pygame.QUIT, mark_done)
+    def set_screen(event):
+        pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
+    events.add(pygame.VIDEORESIZE, set_screen)
+    events.add_key_press(pygame.K_ESCAPE, events.func_for(pygame.QUIT))
+    events.add_key_press(pygame.K_f, lambda _: zutil.make_full_screen())
     
+    field = Field()
+    field.register_events(events)
     field.start(pygame.display.get_surface().get_rect())
+    
+    clock = pygame.time.Clock()
     while not main.done:
         events.process_events()
         screen = pygame.display.get_surface()
