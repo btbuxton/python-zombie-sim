@@ -1,5 +1,6 @@
-from nose.tools import *
-import zombiesim
+#from nose.tools import *
+
+#import zombiesim
 
 def setup():
     pass
@@ -8,4 +9,4 @@ def teardown():
     pass
 
 def test_basic():
-    print "I RAN!"
+    assert 1 == 1
