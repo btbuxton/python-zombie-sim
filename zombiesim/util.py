@@ -42,6 +42,12 @@ def xfrange(start, stop, step):
     while ((step > 0 and current < stop) or (step < 0 and current > stop)):
         yield current
         current = current + step
+        
+def diff_points(a,b):
+    return (a[0] - b[0], a[1] - b[1])
+
+def add_points(a,b):
+    return (a[0] + b[0], a[1] + b[1])
 
 def make_full_screen():
     display_info = pygame.display.Info()

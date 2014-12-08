@@ -6,8 +6,8 @@ Created on Dec 7, 2014
 import pygame
 import random
 import sys
-import zombiesim.util as zutil
-import zombiesim.colors as zcolors
+import util as zutil
+import colors as zcolors
 
 class EntityGroup(pygame.sprite.Group):
     def __init__(self, clazz):
@@ -62,6 +62,25 @@ class Entity(pygame.sprite.Sprite):
     
     def reset_pos(self):
         pass
+    
+    def pick_up(self, pos):
+        groups = self.groups()
+        self._mouse_groups=[]
+        for group in groups:
+            group.remove(self)
+            self._mouse_groups.append(group)
+        self._mouse_offset = zutil.diff_points(self.rect.center, pos)
+    
+    def update_pick_up(self, pos):
+        self.rect.center = zutil.add_points(pos, self._mouse_offset)
+        self.reset_pos()
+    
+    def put_down(self, pos):
+        self.update_pick_up(pos)
+        for group in self._mouse_groups:
+            group.add(self)
+        del self._mouse_groups
+        del self._mouse_offset
         
 class Actor(Entity):
     def __init__(self, color=zcolors.WHITE, default_speed=4.0):

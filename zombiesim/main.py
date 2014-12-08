@@ -4,10 +4,10 @@ Created on Nov 29, 2014
 @author: btbuxton
 '''
 import pygame
-import zombiesim.util as zutil
-import zombiesim.colors as zcolors
-from zombiesim.event import EventLookup
-from zombiesim.field import Field
+import util as zutil
+import colors as zcolors
+from event import EventLookup
+from field import Field
 
 
 def main():

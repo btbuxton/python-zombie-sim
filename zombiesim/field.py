@@ -7,8 +7,8 @@ Created on Dec 7, 2014
 import pygame
 import time
 import itertools
-import zombiesim.util as zutil
-import zombiesim.colors as zcolors
+import util as zutil
+import colors as zcolors
 from entities import Human
 from entities import Zombie
 from entities import Food
@@ -75,10 +75,10 @@ class Field(object):
             self.start(self.rect)
     
     def all_dead(self):
-        return not self.humans
+        return not self.humans and not self.under_mouse
     
     def check_food(self):
-        while len(self.food) < self.MAX_FOOD:
+        while (len(self.food) + len(self.under_mouse)) < self.MAX_FOOD:
             self.food.create_one(self.killzone)
         
     def draw(self, screen):
@@ -112,25 +112,16 @@ class Field(object):
         pos = event.pos
         entities = self.entities_under(pos)
         for entity in entities:
-            groups = entity.groups()
-            entity._mouse_groups=[]
-            for group in groups:
-                group.remove(entity)
-                entity._mouse_groups.append(group)
+            entity.pick_up(pos)
             self.under_mouse.add(entity)
         def on_up(pos, entities = entities):
             for entity in entities:
-                entity.rect.center = pos 
-                entity.reset_pos()
                 self.under_mouse.remove(entity)
-                for group in entity._mouse_groups:
-                    group.add(entity)
-                del entity._mouse_groups
+                entity.put_down(pos)
         self.on_mouse_up = on_up
         def on_move(pos, entities = entities):
             for entity in entities:
-                entity.rect.center = pos
-                entity.reset_pos()
+                entity.update_pick_up(pos)
         self.on_mouse_move = on_move
         
     def mouse_move(self, event):
