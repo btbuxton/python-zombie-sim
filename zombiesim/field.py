@@ -4,14 +4,17 @@ Created on Dec 7, 2014
 @author: bbuxton
 '''
 
-import pygame
-import time
 import itertools
-import util as zutil
+import time
+
+import pygame
+
 import colors as zcolors
+from entities import Food
 from entities import Human
 from entities import Zombie
-from entities import Food
+import util as zutil
+
 
 class Field(object):
     MAX_FOOD = 2

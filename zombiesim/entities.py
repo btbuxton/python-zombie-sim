@@ -3,11 +3,14 @@ Created on Dec 7, 2014
 
 @author: bbuxton
 '''
-import pygame
 import random
 import sys
-import util as zutil
-import colors as zcolors
+
+import pygame
+
+import zombiesim.colors as zcolors
+import zombiesim.util as zutil
+
 
 class EntityGroup(pygame.sprite.Group):
     def __init__(self, clazz):
@@ -45,6 +48,7 @@ class Entity(pygame.sprite.Sprite):
     def __init__(self, color=zcolors.WHITE):
         pygame.sprite.Sprite.__init__(self)
         self.create_image(color)
+        self._mouse_groups = None
         
     def added_to_group(self, group):
         pass
@@ -52,7 +56,7 @@ class Entity(pygame.sprite.Sprite):
     def create_image(self, color):
         width = 10
         height = 10
-        self.image = pygame.Surface([width, height],flags = pygame.SRCALPHA)
+        self.image = pygame.Surface([width, height], flags=pygame.SRCALPHA)
         self.image.fill(zcolors.CLEAR)
         self.draw_image(color)
         self.rect = self.image.get_rect()
@@ -65,7 +69,7 @@ class Entity(pygame.sprite.Sprite):
     
     def pick_up(self, pos):
         groups = self.groups()
-        self._mouse_groups=[]
+        self._mouse_groups = []
         for group in groups:
             group.remove(self)
             self._mouse_groups.append(group)
@@ -99,7 +103,7 @@ class Actor(Entity):
         self.y = float(self.rect.y)
       
     def update_pos(self, direc):
-        dirx,diry = direc
+        dirx, diry = direc
         self.x = self.x + (dirx * self.speed)
         self.y = self.y + (diry * self.speed)
         self.rect.x = int(round(self.x))
@@ -127,13 +131,13 @@ class Zombie(Actor):
     ATTACK_WAIT_MAX = 50
     def __init__(self):
         Actor.__init__(self, zcolors.RED, 2.0)
-        self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2,self.ATTACK_WAIT_MAX)
+        self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2, self.ATTACK_WAIT_MAX)
         self.aimless = 0
         
     def update(self, field):
         if self.aimless > 0:
             self.aimless = self.aimless - 1
-            Actor.update(self,field)
+            Actor.update(self, field)
             return
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
@@ -141,13 +145,13 @@ class Zombie(Actor):
         if not field.killzone.contains(self):
             x = random.randint(field.killzone.left, field.killzone.right)
             y = random.randint(field.killzone.top, field.killzone.bottom)
-            self.current_dir = zutil.dir_to(self.rect.center, (x,y))
-            #self.current_dir = dir_to(self.rect.center, field.killzone.center)
-            Actor.update(self,field)
+            self.current_dir = zutil.dir_to(self.rect.center, (x, y))
+            # self.current_dir = dir_to(self.rect.center, field.killzone.center)
+            Actor.update(self, field)
             self.aimless = Zombie.VISION
             self.attack_wait = self.ATTACK_WAIT_MAX
             return
-        victim,dist = field.humans.closest_to(self) #, field.killzone.contains)
+        victim, dist = field.humans.closest_to(self)  # , field.killzone.contains)
         do_change = lambda: None
         if victim is not None and dist < self.VISION:
             direc = zutil.dir_to(self.rect.center, victim.rect.center)
@@ -155,8 +159,8 @@ class Zombie(Actor):
                 direc = zutil.opposite_dir(direc)
             self.current_dir = direc
             do_change = self.change_dir
-        Actor.update(self,field)
-        do_change() #this is so zombie changes directions when there is no longer a human
+        Actor.update(self, field)
+        do_change()  # this is so zombie changes directions when there is no longer a human
             
 class Human(Actor):
     VISION = 100
@@ -178,14 +182,14 @@ class Human(Actor):
         return self.speed == 0
         
     def reset_lifetime(self):
-        self.lifetime = zutil.xfrange(2 + (random.random() * 2),0,-0.0005)
+        self.lifetime = zutil.xfrange(2 + (random.random() * 2), 0, -0.0005)
         
     def alpha(self):
         result = self.speed / 2.0
         return min(result, 1)
         
     def update(self, field):
-        #if self.freeze > 0:
+        # if self.freeze > 0:
         #    self.freeze = self.freeze - 1
         #    return
         self.speed = next(self.lifetime, 0)
@@ -200,7 +204,7 @@ class Human(Actor):
         goto = (goto[0] + (1 * self.current_dir[0]), goto[1] + (1 * self.current_dir[1]))
         go_to_dir = zutil.dir_to(self.rect.center, goto)
         self.current_dir = go_to_dir
-        Actor.update(self,field)
+        Actor.update(self, field)
         
     def run_from_zombies(self, field, goto):
         for zombie in field.zombies.sprites():
@@ -235,14 +239,14 @@ class Human(Actor):
         if self.rect.bottom > parent_rect.bottom:
             self.rect.bottom = parent_rect.bottom
         self.reset_pos()
-        #Actor.hit_edge(self, parent_rect)
-        #self.current_dir = dir_to(self.rect.center, parent_rect.center)
+        # Actor.hit_edge(self, parent_rect)
+        # self.current_dir = dir_to(self.rect.center, parent_rect.center)
         self.current_dir = zutil.opposite_dir(self.current_dir)
         self.freeze = 50
-        #x = random.randint(parent_rect.left, parent_rect.right)
-        #y = random.randint(parent_rect.top, parent_rect.bottom)
-        #self.current_dir = dir_to(self.rect.center, (x,y))
-        #self.current_dir = (0,0)
+        # x = random.randint(parent_rect.left, parent_rect.right)
+        # y = random.randint(parent_rect.top, parent_rect.bottom)
+        # self.current_dir = dir_to(self.rect.center, (x,y))
+        # self.current_dir = (0,0)
 
 class Consumable(Entity):
     def __init__(self, color=zcolors.GREEN, amount=5):

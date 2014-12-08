@@ -4,10 +4,11 @@ Created on Nov 29, 2014
 @author: btbuxton
 '''
 import pygame
-import util as zutil
-import colors as zcolors
-from event import EventLookup
-from field import Field
+
+import zombiesim.colors as zcolors
+from zombiesim.event import EventLookup
+from zombiesim.field import Field
+import zombiesim.util as zutil
 
 
 def main():
@@ -21,7 +22,7 @@ def main():
     pygame.display.set_caption("Zombie Simulation")
 
     events = EventLookup()
-    def mark_done(event):
+    def mark_done(_):
         main.done = True
     main.done = False
     events.add(pygame.QUIT, mark_done)

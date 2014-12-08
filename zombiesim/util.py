@@ -7,12 +7,14 @@ Various utility functions that don't fit into objects yet
 '''
 
 import math
-import time
 import random
+import time
+
 import pygame
 
-def str_diff_time(begin):
-    end = int(round(time.time() - begin))
+
+def str_diff_time(begin, time_func = time.time):
+    end = int(round(time_func() - begin))
     rest, seconds = divmod(end, 60)
     hours, minutes = divmod(rest, 60)
     return '{0} hours, {1} minutes, {2} seconds'.format(hours, minutes, seconds)
@@ -31,7 +33,7 @@ def dir_to(origin, dest):
 
 def opposite_dir(direc):
     negative_one = float(-1)
-    return map(lambda x: x * negative_one, direc)
+    return tuple([x * negative_one for x in direc])
     
 def random_direction():
     angle = math.radians(random.randrange(0, 360))

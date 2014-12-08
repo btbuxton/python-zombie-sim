@@ -4,8 +4,10 @@ Created on Dec 7, 2014
 @author: bbuxton
 '''
 
-from zombiesim.util import *
 import unittest
+
+from zombiesim.util import *
+
 
 class UtilTest((unittest.TestCase)):
     def test_distance(self):
