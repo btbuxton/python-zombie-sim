@@ -5,24 +5,22 @@ Created on Dec 7, 2014
 '''
 import random
 import sys
-
 import pygame
 
-import zombiesim.colors as zcolors
 import zombiesim.util as zutil
 
-
 class EntityGroup(pygame.sprite.Group):
-    def __init__(self, clazz):
+    def __init__(self, clazz, color):
         pygame.sprite.Group.__init__(self)
         self.entity_class = clazz
+        self.color = color
     
-    def create_one(self, rect):
-        entity = self.entity_class()
+    def create_one(self, point_getter):
+        entity = self.entity_class(self.color)
         self.add(entity)
-        entity.rect.x = random.randrange(rect.x, rect.width - entity.rect.width)
-        entity.rect.y = random.randrange(rect.y, rect.height - entity.rect.height)
+        entity.rect.center = point_getter()
         entity.added_to_group(self)
+        return entity
         
     def closest_to(self, other, to_include=lambda entity: True):
         curmin = sys.maxint
@@ -39,26 +37,27 @@ class EntityGroup(pygame.sprite.Group):
     
 class Entity(pygame.sprite.Sprite):
     @classmethod
-    def create_group(clazz, size, rect):
-        all_group = EntityGroup(clazz)
+    def create_group(clazz, size, color, point_getter):
+        all_group = EntityGroup(clazz, color)
         for _ in range(size):
-            all_group.create_one(rect)
+            all_group.create_one(point_getter)
         return all_group
     
-    def __init__(self, color=zcolors.WHITE):
+    def __init__(self, color):
         pygame.sprite.Sprite.__init__(self)
-        self.create_image(color)
+        self.color = color
+        self.create_image()
         self._mouse_groups = None
         
     def added_to_group(self, group):
         pass
         
-    def create_image(self, color):
+    def create_image(self):
         width = 10
         height = 10
         self.image = pygame.Surface([width, height], flags=pygame.SRCALPHA)
-        self.image.fill(zcolors.CLEAR)
-        self.draw_image(color)
+        self.image.fill(pygame.Color(0,0,0,0))
+        self.draw_image(self.color)
         self.rect = self.image.get_rect()
     
     def draw_image(self, color):
@@ -87,7 +86,7 @@ class Entity(pygame.sprite.Sprite):
         del self._mouse_offset
         
 class Actor(Entity):
-    def __init__(self, color=zcolors.WHITE, default_speed=4.0):
+    def __init__(self, color, default_speed=4.0):
         Entity.__init__(self, color)
         self.speed = default_speed
         self.change_dir()
@@ -129,8 +128,8 @@ class Actor(Entity):
 class Zombie(Actor):
     VISION = 250
     ATTACK_WAIT_MAX = 50
-    def __init__(self):
-        Actor.__init__(self, zcolors.RED, 2.0)
+    def __init__(self, color):
+        Actor.__init__(self, color, 2.0)
         self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2, self.ATTACK_WAIT_MAX)
         self.aimless = 0
         
@@ -164,8 +163,8 @@ class Zombie(Actor):
             
 class Human(Actor):
     VISION = 100
-    def __init__(self):
-        Actor.__init__(self, zcolors.PINK)
+    def __init__(self, color):
+        Actor.__init__(self, color)
         self.reset_lifetime()
         self.freeze = 0
         
@@ -197,7 +196,7 @@ class Human(Actor):
             self.kill()
             field.turn(self)
             return
-        self.draw_image(map(lambda x: int(x * self.alpha()), zcolors.PINK))
+        self.draw_image(map(lambda x: int(x * self.alpha()), self.color))
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
@@ -249,7 +248,7 @@ class Human(Actor):
         # self.current_dir = (0,0)
 
 class Consumable(Entity):
-    def __init__(self, color=zcolors.GREEN, amount=5):
+    def __init__(self, color, amount=5):
         Entity.__init__(self, color)
         self.amount = amount
         
@@ -265,5 +264,5 @@ class Consumable(Entity):
         return self.amount > 0
         
 class Food(Consumable):
-    def __init__(self):
-        Consumable.__init__(self, zcolors.GREEN, amount=50)
+    def __init__(self, color):
+        Consumable.__init__(self, color, amount=50)

@@ -5,7 +5,6 @@ Created on Nov 29, 2014
 '''
 import pygame
 
-import zombiesim.colors as zcolors
 from zombiesim.event import EventLookup
 from zombiesim.field import Field
 import zombiesim.util as zutil
@@ -42,7 +41,7 @@ def main():
         screen = pygame.display.get_surface()
         field.update(screen)
         
-        screen.fill(zcolors.BLACK)
+        screen.fill(pygame.Color('black'))
         field.draw(screen)
         pygame.display.flip()
         

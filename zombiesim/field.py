@@ -6,10 +6,9 @@ Created on Dec 7, 2014
 
 import itertools
 import time
-
+import random
 import pygame
 
-import colors as zcolors
 from entities import Food
 from entities import Human
 from entities import Zombie
@@ -33,9 +32,13 @@ class Field(object):
     def start(self, rect):
         self.rect = rect
         self.killzone = self.create_killzone()
-        self.zombies = Zombie.create_group(self.START_ZOMBIES, self.killzone)
-        self.humans = Human.create_group(self.START_HUMANS, self.killzone)
-        self.food = Food.create_group(self.MAX_FOOD, self.killzone)
+        def point_creator():
+                x = random.randrange(self.killzone.left, self.killzone.right)
+                y = random.randrange(self.killzone.top, self.killzone.bottom)
+                return (x,y)
+        self.zombies = Zombie.create_group(self.START_ZOMBIES, pygame.Color('red'), point_creator)
+        self.humans = Human.create_group(self.START_HUMANS, pygame.Color('pink'), point_creator)
+        self.food = Food.create_group(self.MAX_FOOD, pygame.Color('green'), point_creator)
         self.started = time.time()
         
     def stop(self):
@@ -85,17 +88,14 @@ class Field(object):
             self.food.create_one(self.killzone)
         
     def draw(self, screen):
-        screen.fill(zcolors.DARK_GREEN, self.killzone)
+        screen.fill(pygame.Color(0, 32, 0), self.killzone)
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
         self.under_mouse.draw(screen)
         
     def turn(self, human):
-        zombie = Zombie()
-        zombie.rect = human.rect
-        self.zombies.add(zombie)
-        zombie.added_to_group(self.zombies)
+        self.zombies.create_one(lambda: human.rect.center)
         
     def check_and_fix_edges(self):
         def check_and_fix(actor, parent_rect):
