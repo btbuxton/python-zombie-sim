@@ -9,11 +9,13 @@ import time
 import random
 import pygame
 
-from entities import Food
-from entities import Human
-from entities import Zombie
-import util as zutil
+from zombiesim.entities import Food
+from zombiesim.entities import Human
+from zombiesim.entities import Zombie
 
+from zombiesim.sprite_mover import SpriteMover
+
+import zombiesim.util as zutil
 
 class Field(object):
     MAX_FOOD = 2
@@ -25,9 +27,7 @@ class Field(object):
     MINUTE = 60 * SEC
     
     def __init__(self):
-        self.under_mouse = pygame.sprite.Group()
-        self.on_mouse_up = lambda pos: None
-        self.on_mouse_move = lambda pos: None
+        self.mover = None
     
     def start(self, rect):
         self.rect = rect
@@ -53,9 +53,7 @@ class Field(object):
         events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
         events.every_do(5 * self.MINUTE, self.print_status)
         events.add_key_press(pygame.K_r, lambda _: self.restart())
-        events.add(pygame.MOUSEBUTTONDOWN, self.mouse_down)
-        events.add(pygame.MOUSEMOTION, self.mouse_move)
-        events.add(pygame.MOUSEBUTTONUP, self.mouse_up)
+        self.mover = SpriteMover(events, self.entities_under, on_sprite_change = lambda entity: entity.reset_pos())
         
     def print_status(self):
         print 'Update: humans: {0} zombies: {1}'.format(len(self.humans), len(self.zombies))
@@ -81,10 +79,10 @@ class Field(object):
             self.start(self.rect)
     
     def all_dead(self):
-        return not self.humans and not self.under_mouse
+        return not self.humans and not self.mover.under_mouse
     
     def check_food(self):
-        while (len(self.food) + len(self.under_mouse)) < self.MAX_FOOD:
+        while (len(self.food) + len(self.mover.under_mouse)) < self.MAX_FOOD:
             self.food.create_one(self.killzone)
         
     def draw(self, screen):
@@ -92,7 +90,7 @@ class Field(object):
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
-        self.under_mouse.draw(screen)
+        self.mover.draw(screen)
         
     def turn(self, human):
         self.zombies.create_one(lambda: human.rect.center)
@@ -108,38 +106,6 @@ class Field(object):
             
     def create_killzone(self):
         return self.rect.inflate(0 - Human.VISION * 1.5, 0 - Human.VISION * 1.5)
-    
-    def mouse_down(self,event):
-        if event.button is not 1:
-            return
-        pos = event.pos
-        entities = self.entities_under(pos)
-        for entity in entities:
-            entity.pick_up(pos)
-            self.under_mouse.add(entity)
-        def on_up(pos, entities = entities):
-            for entity in entities:
-                self.under_mouse.remove(entity)
-                entity.put_down(pos)
-        self.on_mouse_up = on_up
-        def on_move(pos, entities = entities):
-            for entity in entities:
-                entity.update_pick_up(pos)
-        self.on_mouse_move = on_move
-        
-    def mouse_move(self, event):
-        if not event.buttons[0]:
-            return
-        pos = event.pos
-        self.on_mouse_move(pos)
-    
-    def mouse_up(self, event):
-        if event.button is not 1:
-            return
-        pos = event.pos
-        self.on_mouse_up(pos)
-        self.on_mouse_up = lambda pos: None
-        self.on_mouse_move = lambda pos: None
     
     def entities_under(self, pos):
         return [each for each in itertools.chain(self.humans, self.zombies, self.food)
