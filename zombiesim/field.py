@@ -32,14 +32,15 @@ class Field(object):
     def start(self, rect):
         self.rect = rect
         self.killzone = self.create_killzone()
-        def point_creator():
-                x = random.randrange(self.killzone.left, self.killzone.right)
-                y = random.randrange(self.killzone.top, self.killzone.bottom)
-                return (x,y)
-        self.zombies = Zombie.create_group(self.START_ZOMBIES, pygame.Color('red'), point_creator)
-        self.humans = Human.create_group(self.START_HUMANS, pygame.Color('pink'), point_creator)
-        self.food = Food.create_group(self.MAX_FOOD, pygame.Color('green'), point_creator)
+        self.zombies = Zombie.create_group(self.START_ZOMBIES, pygame.Color('red'), self.point_creator)
+        self.humans = Human.create_group(self.START_HUMANS, pygame.Color('pink'), self.point_creator)
+        self.food = Food.create_group(self.MAX_FOOD, pygame.Color('green'), self.point_creator)
         self.started = time.time()
+        
+    def point_creator(self):
+        x = random.randrange(self.killzone.left, self.killzone.right)
+        y = random.randrange(self.killzone.top, self.killzone.bottom)
+        return (x,y)
         
     def stop(self):
         print("To all die: " + zutil.str_diff_time(self.started))
@@ -83,7 +84,7 @@ class Field(object):
     
     def check_food(self):
         while (len(self.food) + len(self.mover.under_mouse)) < self.MAX_FOOD:
-            self.food.create_one(self.killzone)
+            self.food.create_one(self.point_creator)
         
     def draw(self, screen):
         screen.fill(pygame.Color(0, 32, 0), self.killzone)

@@ -59,6 +59,7 @@ class Entity(pygame.sprite.Sprite):
         self.image.fill(pygame.Color(0,0,0,0))
         self.draw_image(self.color)
         self.rect = self.image.get_rect()
+        self.radius = min(width, height) / 2
     
     def draw_image(self, color):
         pass
@@ -142,8 +143,8 @@ class Zombie(Actor):
             self.attack_wait = self.attack_wait - 1
             return
         if not field.killzone.contains(self):
-            x = random.randint(field.killzone.left, field.killzone.right)
-            y = random.randint(field.killzone.top, field.killzone.bottom)
+            x = random.randint(field.killzone.left + self.VISION, field.killzone.right - self.VISION)
+            y = random.randint(field.killzone.top + self.VISION, field.killzone.bottom - self.VISION)
             self.current_dir = zutil.dir_to(self.rect.center, (x, y))
             # self.current_dir = dir_to(self.rect.center, field.killzone.center)
             Actor.update(self, field)
@@ -188,9 +189,10 @@ class Human(Actor):
         return min(result, 1)
         
     def update(self, field):
-        # if self.freeze > 0:
-        #    self.freeze = self.freeze - 1
-        #    return
+        if self.freeze > 0:
+            self.freeze = self.freeze - 1
+            Actor.update(self, field)
+            return
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
@@ -229,19 +231,19 @@ class Human(Actor):
         return  goto
         
     def hit_edge(self, parent_rect):
-        if self.rect.left < parent_rect.left:
-            self.rect.left = parent_rect.left
-        if self.rect.right > parent_rect.right:
-            self.rect.right = parent_rect.right
-        if self.rect.top < parent_rect.top:
-            self.rect.top = parent_rect.top
-        if self.rect.bottom > parent_rect.bottom:
-            self.rect.bottom = parent_rect.bottom
-        self.reset_pos()
-        # Actor.hit_edge(self, parent_rect)
+        #if self.rect.left < parent_rect.left:
+        #    self.rect.left = parent_rect.left
+        #if self.rect.right > parent_rect.right:
+        #    self.rect.right = parent_rect.right
+        #if self.rect.top < parent_rect.top:
+        #    self.rect.top = parent_rect.top
+        #if self.rect.bottom > parent_rect.bottom:
+        #    self.rect.bottom = parent_rect.bottom
+        #self.reset_pos()
+        Actor.hit_edge(self, parent_rect)
         # self.current_dir = dir_to(self.rect.center, parent_rect.center)
-        self.current_dir = zutil.opposite_dir(self.current_dir)
-        self.freeze = 50
+        #self.current_dir = zutil.opposite_dir(self.current_dir)
+        self.freeze = 10
         # x = random.randint(parent_rect.left, parent_rect.right)
         # y = random.randint(parent_rect.top, parent_rect.bottom)
         # self.current_dir = dir_to(self.rect.center, (x,y))
