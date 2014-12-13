@@ -127,7 +127,7 @@ class Actor(Entity):
         self.update_pos(self.current_dir)
         
 class Zombie(Actor):
-    VISION = 250
+    VISION = 150
     ATTACK_WAIT_MAX = 50
     def __init__(self, color):
         Actor.__init__(self, color, 2.0)
