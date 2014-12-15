@@ -226,7 +226,7 @@ class Human(Actor):
                 direc = zutil.dir_to(self.rect.center, food.rect.center)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                factor = float(self.speed) / 4 * self.VISION
+                factor = (float(self.speed) / 4 * self.VISION) ** 2
                 goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
         return  goto
         
