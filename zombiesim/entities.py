@@ -212,7 +212,7 @@ class Human(Actor):
             dist = zutil.distance(self.rect.center, zombie.rect.center)
             if dist >= self.VISION:
                 continue
-            factor_dist = float(self.VISION - dist)
+            factor_dist = float(self.VISION - dist) ** 2
             direc = zutil.opposite_dir(zutil.dir_to(self.rect.center, zombie.rect.center))
             goto_x, goto_y = goto
             dir_x, dir_y = direc
