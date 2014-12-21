@@ -9,7 +9,11 @@ from zombiesim.event import EventLookup
 from zombiesim.field import Field
 import zombiesim.util as zutil
 
-
+class Done(Exception):
+    @classmethod
+    def raise_it(cls):
+        raise cls()
+    
 def main():
     pygame.init()
     fps = 60
@@ -21,10 +25,7 @@ def main():
     pygame.display.set_caption("Zombie Simulation")
 
     events = EventLookup()
-    def mark_done(_):
-        main.done = True
-    main.done = False
-    events.add(pygame.QUIT, mark_done)
+    events.add(pygame.QUIT, lambda _: Done.raise_it())
     def set_screen(event):
         pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
     events.add(pygame.VIDEORESIZE, set_screen)
@@ -36,16 +37,19 @@ def main():
     field.start(pygame.display.get_surface().get_rect())
     
     clock = pygame.time.Clock()
-    while not main.done:
-        events.process_events()
-        screen = pygame.display.get_surface()
-        field.update(screen)
+    try:
+        while True:
+            events.process_events()
+            screen = pygame.display.get_surface()
+            field.update(screen)
         
-        screen.fill(pygame.Color('black'))
-        field.draw(screen)
-        pygame.display.flip()
+            screen.fill(pygame.Color('black'))
+            field.draw(screen)
+            pygame.display.flip()
         
-        clock.tick(fps)
+            clock.tick(fps)
+    except Done:
+        pass
     pygame.quit()
     
 if __name__ == '__main__':
