@@ -19,7 +19,7 @@ import zombiesim.util as zutil
 
 class Field(object):
     MAX_FOOD = 2
-    START_ZOMBIES = 1
+    START_ZOMBIES = 5
     START_HUMANS = 250
     ZOMBIE_UPDATE_MS = 200
     HUMAN_UPDATE_MS = 100
@@ -31,15 +31,15 @@ class Field(object):
     
     def start(self, rect):
         self.rect = rect
-        self.killzone = self.create_killzone()
+        #self.killzone = self.create_killzone()
         self.zombies = Zombie.create_group(self.START_ZOMBIES, pygame.Color('red'), self.point_creator)
         self.humans = Human.create_group(self.START_HUMANS, pygame.Color('pink'), self.point_creator)
         self.food = Food.create_group(self.MAX_FOOD, pygame.Color('green'), self.point_creator)
         self.started = time.time()
         
     def point_creator(self):
-        x = random.randrange(self.killzone.left, self.killzone.right)
-        y = random.randrange(self.killzone.top, self.killzone.bottom)
+        x = random.randrange(self.rect.left, self.rect.right)
+        y = random.randrange(self.rect.top, self.rect.bottom)
         return (x,y)
         
     def stop(self):
@@ -61,7 +61,7 @@ class Field(object):
         
     def update(self, screen):
         self.rect = screen.get_rect()
-        self.killzone = self.create_killzone()
+        #self.killzone = self.create_killzone()
         all_dead = []
         for zombie in self.zombies:
             dead = pygame.sprite.spritecollide(zombie, self.humans, True, collided = pygame.sprite.collide_circle)
@@ -87,7 +87,7 @@ class Field(object):
             self.food.create_one(self.point_creator)
         
     def draw(self, screen):
-        screen.fill(pygame.Color(0, 32, 0), self.killzone)
+        #screen.fill(pygame.Color(0, 32, 0), self.killzone)
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
@@ -105,8 +105,8 @@ class Field(object):
         for each in self.humans.sprites():
             check_and_fix(each, self.rect)
             
-    def create_killzone(self):
-        return self.rect.inflate(0 - Human.VISION * 1.5, 0 - Human.VISION * 1.5)
+    #def create_killzone(self):
+    #    return self.rect.inflate(0 - Human.VISION * 1.5, 0 - Human.VISION * 1.5)
     
     def entities_under(self, pos):
         return [each for each in itertools.chain(self.humans, self.zombies, self.food)

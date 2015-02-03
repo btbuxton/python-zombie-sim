@@ -12,7 +12,6 @@ import time
 
 import pygame
 
-
 def str_diff_time(begin, time_func = time.time):
     end = int(round(time_func() - begin))
     rest, seconds = divmod(end, 60)
@@ -25,19 +24,32 @@ def distance(origin, dest):
     return math.sqrt(((originy - desty) ** 2) + ((originx - destx) **2))
 
 def dir_to(origin, dest):
+    angle = angle_to(origin, dest)
+    return angle_to_dir(angle)
+
+def angle_to_dir(angle):
+    return (math.cos(angle), math.sin(angle))
+
+def angle_to(origin, dest):
     originx,originy = origin
     destx,desty = dest
     diffx, diffy = destx - originx, desty - originy
-    angle = math.atan2(diffy, diffx)
-    return (math.cos(angle), math.sin(angle))
+    return math.atan2(diffy, diffx)
 
 def opposite_dir(direc):
     negative_one = float(-1)
     return tuple([x * negative_one for x in direc])
     
 def random_direction():
-    angle = math.radians(random.randrange(0, 360))
-    return (math.cos(angle), math.sin(angle))
+    angle = random_angle()
+    return angle_to_dir(angle)
+
+def random_angle():
+    return math.radians(random.randint(0, 359))
+
+def random_angle_change(angle, amount):
+    change = math.radians(random.randint(-amount,amount))
+    return angle + change;
 
 def xfrange(start, stop, step):
     current = start
