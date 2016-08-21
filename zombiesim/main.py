@@ -18,8 +18,8 @@ def main():
     pygame.init()
     fps = 60
     display_info = pygame.display.Info()
-    screen_width = int(display_info.current_w * 0.75)
-    screen_height = int(display_info.current_h * 0.75)
+    screen_width = display_info.current_w
+    screen_height = display_info.current_h
     
     pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF | pygame.RESIZABLE)
     pygame.display.set_caption("Zombie Simulation")
@@ -32,7 +32,12 @@ def main():
     events.add_key_press(pygame.K_ESCAPE, events.func_for(pygame.QUIT))
     events.add_key_press(pygame.K_f, lambda _: zutil.make_full_screen())
     
-    field = Field()
+    max_w = 1440
+    ratio = float(screen_width) / max_w
+    start_zombies = int(ratio * 5)
+    start_humans = int(ratio * 250)
+    max_food = int(ratio * 2)
+    field = Field(start_zombies = start_zombies, start_humans = start_humans, max_food = max_food)
     field.register_events(events)
     field.start(pygame.display.get_surface().get_rect())
     

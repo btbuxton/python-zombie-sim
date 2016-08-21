@@ -18,23 +18,23 @@ from zombiesim.sprite_mover import SpriteMover
 import zombiesim.util as zutil
 
 class Field(object):
-    MAX_FOOD = 2
-    START_ZOMBIES = 5
-    START_HUMANS = 250
     ZOMBIE_UPDATE_MS = 200
     HUMAN_UPDATE_MS = 100
     SEC = 1000
     MINUTE = 60 * SEC
     
-    def __init__(self):
+    def __init__(self, start_zombies = 5, start_humans = 250, max_food = 2):
         self.mover = None
+        self.start_zombies = start_zombies
+        self.start_humans = start_humans
+        self.max_food = max_food 
     
     def start(self, rect):
         self.rect = rect
         #self.killzone = self.create_killzone()
-        self.zombies = Zombie.create_group(self.START_ZOMBIES, pygame.Color('red'), self.point_creator)
-        self.humans = Human.create_group(self.START_HUMANS, pygame.Color('pink'), self.point_creator)
-        self.food = Food.create_group(self.MAX_FOOD, pygame.Color('green'), self.point_creator)
+        self.zombies = Zombie.create_group(self.start_zombies, pygame.Color('red'), self.point_creator)
+        self.humans = Human.create_group(self.start_humans, pygame.Color('pink'), self.point_creator)
+        self.food = Food.create_group(self.max_food, pygame.Color('green'), self.point_creator)
         self.started = time.time()
         
     def point_creator(self):
@@ -83,7 +83,7 @@ class Field(object):
         return not self.humans and not self.mover.under_mouse
     
     def check_food(self):
-        while (len(self.food) + len(self.mover.under_mouse)) < self.MAX_FOOD:
+        while (len(self.food) + len(self.mover.under_mouse)) < self.max_food:
             self.food.create_one(self.point_creator)
         
     def draw(self, screen):
@@ -104,9 +104,6 @@ class Field(object):
             check_and_fix(each, self.rect)
         for each in self.humans.sprites():
             check_and_fix(each, self.rect)
-            
-    #def create_killzone(self):
-    #    return self.rect.inflate(0 - Human.VISION * 1.5, 0 - Human.VISION * 1.5)
     
     def entities_under(self, pos):
         return [each for each in itertools.chain(self.humans, self.zombies, self.food)
