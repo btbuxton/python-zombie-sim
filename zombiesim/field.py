@@ -31,7 +31,6 @@ class Field(object):
     
     def start(self, rect):
         self.rect = rect
-        #self.killzone = self.create_killzone()
         self.zombies = Zombie.create_group(self.start_zombies, pygame.Color('red'), self.point_creator)
         self.humans = Human.create_group(self.start_humans, pygame.Color('pink'), self.point_creator)
         self.food = Food.create_group(self.max_food, pygame.Color('green'), self.point_creator)
@@ -87,7 +86,6 @@ class Field(object):
             self.food.create_one(self.point_creator)
         
     def draw(self, screen):
-        #screen.fill(pygame.Color(0, 32, 0), self.killzone)
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
