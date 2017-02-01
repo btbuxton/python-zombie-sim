@@ -23,7 +23,9 @@ class EntityGroup(pygame.sprite.Group):
         entity.added_to_group(self)
         return entity
         
-    def closest_to(self, other, to_include=lambda entity: True):
+    def closest_to(self, other, field, to_include=lambda entity: True):
+        span = zutil.span(field.rect)
+        span_mid = span / 2.0
         curmin = sys.maxint
         curactor = None
         pos = other.rect.center
@@ -31,6 +33,8 @@ class EntityGroup(pygame.sprite.Group):
             if not to_include(each):
                 continue
             dist = zutil.distance(pos, each.rect.center)
+            if dist > span_mid:
+                dist = span - dist
             if dist < curmin:
                 curmin = dist
                 curactor = each
@@ -110,30 +114,14 @@ class Actor(Entity):
         self.rect.x = int(round(self.x))
         self.rect.y = int(round(self.y))
         
-    def hit_edge_freeze(self, parent_rect):
-        if self.rect.left < parent_rect.left:
-            self.rect.left = parent_rect.left
-            self.current_dir=(-self.current_dir[0],self.current_dir[1])
-        if self.rect.right > parent_rect.right:
-            self.rect.right = parent_rect.right
-            self.current_dir=(-self.current_dir[0],self.current_dir[1])
-        if self.rect.top < parent_rect.top:
-            self.rect.top = parent_rect.top
-            self.current_dir=(self.current_dir[0], -self.current_dir[1])
-        if self.rect.bottom > parent_rect.bottom:
-            self.rect.bottom = parent_rect.bottom
-            self.current_dir=(self.current_dir[0], -self.current_dir[1])
-        #self.current_dir = (-self.current_dir[0],-self.current_dir[1])
-        self.reset_pos()
-        
     def hit_edge(self, parent_rect):
-        if self.rect.left < parent_rect.left:
+        if self.rect.centerx < parent_rect.left:
             self.rect.right = parent_rect.right
-        if self.rect.right > parent_rect.right:
+        if self.rect.centerx > parent_rect.right:
             self.rect.left = parent_rect.left
-        if self.rect.top < parent_rect.top:
+        if self.rect.centery < parent_rect.top:
             self.rect.bottom = parent_rect.bottom
-        if self.rect.bottom > parent_rect.bottom:
+        if self.rect.centery > parent_rect.bottom:
             self.rect.top = parent_rect.top
         self.reset_pos()
         
@@ -150,13 +138,8 @@ class Zombie(Actor):
         self.angle = zutil.random_angle()
         super(self.__class__, self).__init__(color, 2.0)
         self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2, self.ATTACK_WAIT_MAX)
-        self.aimless = 0
         
     def update(self, field):
-        if self.aimless > 0:
-            self.aimless = self.aimless - 1
-            Actor.update(self, field)
-            return
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
@@ -174,7 +157,7 @@ class Zombie(Actor):
 
     def run_to_humans(self, field, goto):
         span = zutil.span(field.rect)
-        span_mid = span / 2
+        span_mid = span / 2.0
         for human in field.humans.sprites():
             dist = zutil.distance(self.rect.center, human.rect.center)
             rev_dir = False
@@ -196,9 +179,9 @@ class Zombie(Actor):
         self.angle = zutil.random_angle_change(self.angle, 10)
         self.current_dir = zutil.angle_to_dir(self.angle)
     
-    def hit_edge(self, parent_rect):
-        super(self.__class__, self).hit_edge(parent_rect)
-        self.aimless = 50
+    #def hit_edge(self, parent_rect):
+    #    super(self.__class__, self).hit_edge(parent_rect)
+    #    self.aimless = 50
         
 class Human(Actor):
     VISION = 100
@@ -243,7 +226,7 @@ class Human(Actor):
         
     def run_from_zombies(self, field, goto):
         span = zutil.span(field.rect)
-        span_mid = span / 2
+        span_mid = span / 2.0
         for zombie in field.zombies.sprites():
             dist = zutil.distance(self.rect.center, zombie.rect.center)
             rev_dir = False
@@ -263,9 +246,14 @@ class Human(Actor):
     
     def run_to_food(self, field, goto):
         if self.is_hungry():
-            food, _ = field.food.closest_to(self)
+            span = zutil.span(field.rect)
+            span_mid = span / 2.0
+            food, _ = field.food.closest_to(self, field)
             if food is not None:
                 direc = zutil.dir_to(self.rect.center, food.rect.center)
+                dist = zutil.distance(self.rect.center, food.rect.center)
+                if dist > span_mid:
+                    direc = zutil.opposite_dir(direc)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
                 factor = (float(self.speed) / 4 * self.VISION) ** 2
