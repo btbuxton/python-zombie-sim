@@ -169,7 +169,7 @@ class Zombie(Actor):
             factor_dist = float(self.VISION - dist)
             direc = zutil.dir_to(self.rect.center, human.rect.center)
             if rev_dir: 
-                zutil.opposite_dir(direc)
+                direc = zutil.opposite_dir(direc)
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
@@ -238,7 +238,7 @@ class Human(Actor):
             factor_dist = float(self.VISION - dist) ** 2
             direc = zutil.opposite_dir(zutil.dir_to(self.rect.center, zombie.rect.center))
             if rev_dir: 
-                zutil.opposite_dir(direc)
+                direc = zutil.opposite_dir(direc)
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
