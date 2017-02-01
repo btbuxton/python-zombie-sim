@@ -125,15 +125,16 @@ class Actor(Entity):
             self.current_dir=(self.current_dir[0], -self.current_dir[1])
         #self.current_dir = (-self.current_dir[0],-self.current_dir[1])
         self.reset_pos()
+        
     def hit_edge(self, parent_rect):
         if self.rect.left < parent_rect.left:
-            self.rect.right = parent_rect.right - 50
+            self.rect.right = parent_rect.right
         if self.rect.right > parent_rect.right:
-            self.rect.left = parent_rect.left + 50
+            self.rect.left = parent_rect.left
         if self.rect.top < parent_rect.top:
-            self.rect.bottom = parent_rect.bottom - 50
+            self.rect.bottom = parent_rect.bottom
         if self.rect.bottom > parent_rect.bottom:
-            self.rect.top = parent_rect.top + 50
+            self.rect.top = parent_rect.top
         self.reset_pos()
         
     def change_dir(self):
@@ -172,12 +173,20 @@ class Zombie(Actor):
         self.change_dir()
 
     def run_to_humans(self, field, goto):
+        span = zutil.span(field.rect)
+        span_mid = span / 2
         for human in field.humans.sprites():
             dist = zutil.distance(self.rect.center, human.rect.center)
+            rev_dir = False
+            if dist > span_mid:
+                dist = span - dist
+                rev_dir = True
             if dist >= self.VISION:
                 continue
             factor_dist = float(self.VISION - dist)
             direc = zutil.dir_to(self.rect.center, human.rect.center)
+            if rev_dir: 
+                zutil.opposite_dir(direc)
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
@@ -233,12 +242,20 @@ class Human(Actor):
         super(self.__class__, self).update(field)
         
     def run_from_zombies(self, field, goto):
+        span = zutil.span(field.rect)
+        span_mid = span / 2
         for zombie in field.zombies.sprites():
             dist = zutil.distance(self.rect.center, zombie.rect.center)
+            rev_dir = False
+            if dist > span_mid:
+                dist = span - dist
+                rev_dir = True
             if dist >= self.VISION:
                 continue
             factor_dist = float(self.VISION - dist) ** 2
             direc = zutil.opposite_dir(zutil.dir_to(self.rect.center, zombie.rect.center))
+            if rev_dir: 
+                zutil.opposite_dir(direc)
             goto_x, goto_y = goto
             dir_x, dir_y = direc
             goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))

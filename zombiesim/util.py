@@ -23,6 +23,9 @@ def distance(origin, dest):
     destx,desty = dest
     return math.sqrt(((originy - desty) ** 2) + ((originx - destx) **2))
 
+def span(rect):
+    return distance(rect.topleft, rect.bottomright)
+
 def dir_to(origin, dest):
     angle = angle_to(origin, dest)
     return angle_to_dir(angle)
