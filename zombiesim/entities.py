@@ -115,13 +115,13 @@ class Actor(Entity):
         self.rect.y = int(round(self.y))
         
     def hit_edge(self, parent_rect):
-        if self.rect.centerx < parent_rect.left:
+        if self.rect.left < parent_rect.left:
             self.rect.right = parent_rect.right
-        if self.rect.centerx > parent_rect.right:
+        if self.rect.right > parent_rect.right:
             self.rect.left = parent_rect.left
-        if self.rect.centery < parent_rect.top:
+        if self.rect.top < parent_rect.top:
             self.rect.bottom = parent_rect.bottom
-        if self.rect.centery > parent_rect.bottom:
+        if self.rect.bottom > parent_rect.bottom:
             self.rect.top = parent_rect.top
         self.reset_pos()
         
@@ -153,35 +153,28 @@ class Zombie(Actor):
             self.angle -= math.radians(10)
         self.current_dir = zutil.angle_to_dir(self.angle)
         super(self.__class__, self).update(field)
-        self.change_dir()
+        #self.change_dir()
 
     def run_to_humans(self, field, goto):
-        span = zutil.span(field.rect)
-        span_mid = span / 2.0
-        for human in field.humans.sprites():
-            dist = zutil.distance(self.rect.center, human.rect.center)
-            rev_dir = False
-            if dist > span_mid:
-                dist = span - dist
-                rev_dir = True
-            if dist >= self.VISION:
-                continue
-            factor_dist = float(self.VISION - dist)
-            direc = zutil.dir_to(self.rect.center, human.rect.center)
-            if rev_dir: 
-                direc = zutil.opposite_dir(direc)
-            goto_x, goto_y = goto
-            dir_x, dir_y = direc
-            goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
+        #span = zutil.span(field.rect)
+        #span_mid = span / 2.0
+        victim, _ = field.humans.closest_to(self, field)
+        if victim is not None:
+            direc = zutil.dir_to(self.rect.center, victim.rect.center)
+            dist = zutil.distance(self.rect.center, victim.rect.center)
+            #if dist > span_mid:
+            #    dist = span - dist
+            #    direc = zutil.opposite_dir(direc)
+            if dist < self.VISION:
+                factor_dist = float(self.VISION - dist)
+                goto_x, goto_y = goto
+                dir_x, dir_y = direc
+                goto = (goto_x + (factor_dist * dir_x), goto_y + (factor_dist * dir_y))
         return goto
         
     def change_dir(self):
         self.angle = zutil.random_angle_change(self.angle, 10)
         self.current_dir = zutil.angle_to_dir(self.angle)
-    
-    #def hit_edge(self, parent_rect):
-    #    super(self.__class__, self).hit_edge(parent_rect)
-    #    self.aimless = 50
         
 class Human(Actor):
     VISION = 100
@@ -213,7 +206,7 @@ class Human(Actor):
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
-            field.turn(self)
+            #field.turn(self)
             return
         self.draw_image(map(lambda x: int(x * self.alpha()), self.color))
         goto = self.rect.center
@@ -236,8 +229,8 @@ class Human(Actor):
             if dist >= self.VISION:
                 continue
             factor_dist = float(self.VISION - dist) ** 2
-            direc = zutil.opposite_dir(zutil.dir_to(self.rect.center, zombie.rect.center))
-            if rev_dir: 
+            direc = zutil.dir_to(self.rect.center, zombie.rect.center)
+            if not rev_dir: 
                 direc = zutil.opposite_dir(direc)
             goto_x, goto_y = goto
             dir_x, dir_y = direc
