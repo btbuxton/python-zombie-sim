@@ -132,8 +132,8 @@ class Actor(Entity):
         self.update_pos(self.current_dir)
         
 class Zombie(Actor):
-    VISION = 150
-    ATTACK_WAIT_MAX = 50
+    VISION = 100
+    ATTACK_WAIT_MAX = 25
     def __init__(self, color):
         self.angle = zutil.random_angle()
         super(self.__class__, self).__init__(color, 2.0)
@@ -156,15 +156,15 @@ class Zombie(Actor):
         #self.change_dir()
 
     def run_to_humans(self, field, goto):
-        #span = zutil.span(field.rect)
-        #span_mid = span / 2.0
+        span = zutil.span(field.rect)
+        span_mid = span / 2.0
         victim, _ = field.humans.closest_to(self, field)
         if victim is not None:
             direc = zutil.dir_to(self.rect.center, victim.rect.center)
             dist = zutil.distance(self.rect.center, victim.rect.center)
-            #if dist > span_mid:
-            #    dist = span - dist
-            #    direc = zutil.opposite_dir(direc)
+            if dist > span_mid:
+                dist = span - dist
+                direc = zutil.opposite_dir(direc)
             if dist < self.VISION:
                 factor_dist = float(self.VISION - dist)
                 goto_x, goto_y = goto
@@ -177,7 +177,7 @@ class Zombie(Actor):
         self.current_dir = zutil.angle_to_dir(self.angle)
         
 class Human(Actor):
-    VISION = 100
+    VISION = 50
     def __init__(self, color):
         super(self.__class__, self).__init__(color)
         self.reset_lifetime()
@@ -222,12 +222,12 @@ class Human(Actor):
         span_mid = span / 2.0
         for zombie in field.zombies.sprites():
             dist = zutil.distance(self.rect.center, zombie.rect.center)
+            if dist >= self.VISION:
+                continue
             rev_dir = False
             if dist > span_mid:
                 dist = span - dist
                 rev_dir = True
-            if dist >= self.VISION:
-                continue
             factor_dist = float(self.VISION - dist) ** 2
             direc = zutil.dir_to(self.rect.center, zombie.rect.center)
             if not rev_dir: 
