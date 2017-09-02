@@ -3,3 +3,7 @@
 *.pyc
 /bazel-*
 .vscode
+.eggs/
+.idea/
+zombie_sim.egg-info/
+

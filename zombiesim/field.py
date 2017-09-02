@@ -56,7 +56,7 @@ class Field(object):
         self.mover = SpriteMover(events, self.entities_under, on_sprite_change = lambda entity: entity.reset_pos())
         
     def print_status(self):
-        print 'Update: humans: {0} zombies: {1}'.format(len(self.humans), len(self.zombies))
+        print('Update: humans: {0} zombies: {1}'.format(len(self.humans), len(self.zombies)))
         
     def update(self, screen):
         self.rect = screen.get_rect()

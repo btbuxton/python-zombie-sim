@@ -4,6 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 config = {
+    'python_requires': '>=3',
     'description': 'Zombie Simulation',
     'author': 'Blaine Buxton',
     'url': 'http://blabux.net',

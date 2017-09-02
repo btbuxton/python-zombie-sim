@@ -26,7 +26,7 @@ class EntityGroup(pygame.sprite.Group):
     def closest_to(self, other, field, to_include=lambda entity: True):
         span = zutil.span(field.rect)
         span_mid = span / 2.0
-        curmin = sys.maxint
+        curmin = sys.maxsize
         curactor = None
         pos = other.rect.center
         for each in self.sprites():
@@ -137,7 +137,7 @@ class Zombie(Actor):
     def __init__(self, color):
         self.angle = zutil.random_angle()
         super(self.__class__, self).__init__(color, 2.0)
-        self.attack_wait = random.randint(self.ATTACK_WAIT_MAX / 2, self.ATTACK_WAIT_MAX)
+        self.attack_wait = random.randint(int(self.ATTACK_WAIT_MAX / 2), self.ATTACK_WAIT_MAX)
         
     def update(self, field):
         if self.attack_wait > 0:
@@ -208,7 +208,7 @@ class Human(Actor):
             self.kill()
             #field.turn(self)
             return
-        self.draw_image(map(lambda x: int(x * self.alpha()), self.color))
+        self.draw_image(self.color)
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
