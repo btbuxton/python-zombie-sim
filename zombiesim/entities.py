@@ -208,6 +208,7 @@ class Human(Actor):
             self.kill()
             #field.turn(self)
             return
+        self.color.a = int(255 * self.alpha())
         self.draw_image(self.color)
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
