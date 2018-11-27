@@ -6,4 +6,4 @@
 .eggs/
 .idea/
 zombie_sim.egg-info/
-
+build

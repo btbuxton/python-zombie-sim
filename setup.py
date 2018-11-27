@@ -11,7 +11,7 @@ config = {
     'download_url': 'git://',
     'author_email': 'btbuxton@gmail.com',
     'version': '0.1',
-    'install_requires': ['nose' , 'pygame'],
+    'install_requires': ['nose', 'pygame'],
     'packages': ['zombiesim'],
     'scripts': [],
     'name': 'zombie-sim'
