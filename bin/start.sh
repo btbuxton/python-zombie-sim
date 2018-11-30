@@ -4,4 +4,4 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo $DIR
 cd $DIR/..
 export PYTHONPATH=$(pwd)
-python3 zombiesim/main.py
+pythonw zombiesim/main.py
