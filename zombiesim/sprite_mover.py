@@ -7,20 +7,22 @@ Created on Dec 8, 2014
 import pygame
 from zombiesim.event import EventLookup
 import zombiesim.util as zutil
-from zombiesim.types import Position
+from zombiesim.types import Position, EventCallback
 from collections.abc import Callable
+from typing import List, Dict
 
 SpriteCallback = Callable[[pygame.sprite.Sprite], None]
+SpriteFinder = Callable[[Position], List[pygame.sprite.Sprite]]
 
 
 class SpriteMover(object):
     class Pickup(object):
         def __init__(self, sprite: pygame.sprite.Sprite, pos: Position, on_pos_change: SpriteCallback):
-            self.sprite = sprite
+            self.sprite:pygame.sprite.Sprite = sprite
             self.groups = tuple(sprite.groups())
             center: Position = sprite.rect.center  # type: ignore
-            self.offset = zutil.diff_points(center, pos)
-            self.on_pos_change = on_pos_change
+            self.offset: Position = zutil.diff_points(center, pos)
+            self.on_pos_change: SpriteCallback = on_pos_change
 
         def up(self) -> None:
             for each in self.groups:
@@ -35,13 +37,13 @@ class SpriteMover(object):
             self.sprite.rect.center = new_center  # type: ignore
             self.on_pos_change(self.sprite)
 
-    def __init__(self, event_lookup: EventLookup, sprite_finder_func, on_sprite_change: SpriteCallback = lambda sprite: None):
-        self.under_mouse = pygame.sprite.Group()
-        self.sprite_finder_func = sprite_finder_func
-        self.on_sprite_change = on_sprite_change
-        self.on_mouse_up = lambda pos: None
-        self.on_mouse_move = lambda pos: None
-        self.registry: dict[pygame.sprite.Sprite, SpriteMover.Pickup] = {}
+    def __init__(self, event_lookup: EventLookup, sprite_finder_func: SpriteFinder, on_sprite_change: SpriteCallback = lambda sprite: None):
+        self.under_mouse: pygame.sprite.Group = pygame.sprite.Group()
+        self.sprite_finder_func: SpriteFinder = sprite_finder_func
+        self.on_sprite_change: SpriteCallback = on_sprite_change
+        self.on_mouse_up: EventCallback = lambda pos: None
+        self.on_mouse_move: EventCallback = lambda pos: None
+        self.registry: Dict[pygame.sprite.Sprite, SpriteMover.Pickup] = {}
         self.register_events(event_lookup)
 
     def register_events(self, events: EventLookup) -> None:
