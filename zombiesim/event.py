@@ -7,7 +7,7 @@ Created on Dec 7, 2014
 import pygame
 from collections.abc import Callable
 
-EventCallback = Callable[[pygame.Event],None]
+EventCallback = Callable[[pygame.event.Event],None]
 Runnable = Callable[[], None]
 
 class EventLookup(object):
@@ -20,7 +20,7 @@ class EventLookup(object):
         self._mapping[event_type] = func
 
     def add_key_press(self, key, func: EventCallback=lambda event: None):
-        def key_func(event: pygame.Event) -> None:
+        def key_func(event: pygame.event.Event) -> None:
             evt_key = event.key
             self._keys.get(evt_key, lambda event: None)(event)
 
