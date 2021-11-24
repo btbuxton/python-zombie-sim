@@ -7,21 +7,20 @@ Created on Dec 8, 2014
 import pygame
 from zombiesim.event import EventLookup
 import zombiesim.util as zutil
-from zombiesim.types import Position, EventCallback
+from zombiesim.types import Point, EventCallback
 from collections.abc import Callable
-from typing import List, Dict
 
 SpriteCallback = Callable[[pygame.sprite.Sprite], None]
-SpriteFinder = Callable[[Position], List[pygame.sprite.Sprite]]
+SpriteFinder = Callable[[Point], list[pygame.sprite.Sprite]]
 
 
-class SpriteMover(object):
-    class Pickup(object):
-        def __init__(self, sprite: pygame.sprite.Sprite, pos: Position, on_pos_change: SpriteCallback):
-            self.sprite:pygame.sprite.Sprite = sprite
+class SpriteMover:
+    class Pickup:
+        def __init__(self, sprite: pygame.sprite.Sprite, pos: Point, on_pos_change: SpriteCallback):
+            self.sprite: pygame.sprite.Sprite = sprite
             self.groups = tuple(sprite.groups())
-            center: Position = sprite.rect.center  # type: ignore
-            self.offset: Position = zutil.diff_points(center, pos)
+            center: Point = sprite.rect.center  # type: ignore
+            self.offset: Point = zutil.diff_points(center, pos)
             self.on_pos_change: SpriteCallback = on_pos_change
 
         def up(self) -> None:
@@ -32,8 +31,8 @@ class SpriteMover(object):
             for each in self.groups:
                 each.add(self.sprite)
 
-        def update(self, pos: Position):
-            new_center: Position = zutil.add_points(pos, self.offset)
+        def update(self, pos: Point):
+            new_center: Point = zutil.add_points(pos, self.offset)
             self.sprite.rect.center = new_center  # type: ignore
             self.on_pos_change(self.sprite)
 
@@ -43,7 +42,7 @@ class SpriteMover(object):
         self.on_sprite_change: SpriteCallback = on_sprite_change
         self.on_mouse_up: EventCallback = lambda pos: None
         self.on_mouse_move: EventCallback = lambda pos: None
-        self.registry: Dict[pygame.sprite.Sprite, SpriteMover.Pickup] = {}
+        self.registry: dict[pygame.sprite.Sprite, SpriteMover.Pickup] = {}
         self.register_events(event_lookup)
 
     def register_events(self, events: EventLookup) -> None:
@@ -83,23 +82,23 @@ class SpriteMover(object):
         self.on_mouse_up = lambda pos: None
         self.on_mouse_move = lambda pos: None
 
-    def pick_up(self, sprite: pygame.sprite.Sprite, pos: Position) -> None:
+    def pick_up(self, sprite: pygame.sprite.Sprite, pos: Point) -> None:
         info = self.Pickup(sprite, pos, self.on_sprite_change)
         self.registry[sprite] = info
         info.up()
         self.under_mouse.add(sprite)
 
-    def update_pick_up(self, sprite: pygame.sprite.Sprite, pos: Position) -> None:
+    def update_pick_up(self, sprite: pygame.sprite.Sprite, pos: Point) -> None:
         self.registry[sprite].update(pos)
 
-    def put_down(self, sprite: pygame.sprite.Sprite, pos: Position) -> None:
+    def put_down(self, sprite: pygame.sprite.Sprite, pos: Point) -> None:
         info = self.registry[sprite]
         self.under_mouse.remove(sprite)
         info.down()
         info.update(pos)
         del self.registry[sprite]
 
-    def sprites_under(self, pos: Position):
+    def sprites_under(self, pos: Point):
         return self.sprite_finder_func(pos)
 
     def draw(self, screen):

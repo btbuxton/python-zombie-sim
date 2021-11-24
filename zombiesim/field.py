@@ -17,7 +17,7 @@ from zombiesim.sprite_mover import SpriteMover
 
 import zombiesim.util as zutil
 
-class Field(object):
+class Field:
     ZOMBIE_UPDATE_MS = 200
     HUMAN_UPDATE_MS = 100
     SEC = 1000
