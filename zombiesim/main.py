@@ -17,7 +17,7 @@ class Done(Exception):
         raise cls()
 
 
-def main():
+def main() -> None:
     pygame.init()
     fps = 60
     display_info = pygame.display.Info()

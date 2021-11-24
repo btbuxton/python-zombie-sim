@@ -12,7 +12,7 @@ import zombiesim.util as zutil
 
 class EntityGroup(pygame.sprite.Group):
     def __init__(self, clazz, color):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.entity_class = clazz
         self.color = color
     
@@ -49,7 +49,7 @@ class Entity(pygame.sprite.Sprite):
         return all_group
     
     def __init__(self, color):
-        super(Entity, self).__init__()
+        super().__init__()
         self.color = color
         self.create_image()
         self._mouse_groups = None
@@ -93,7 +93,7 @@ class Entity(pygame.sprite.Sprite):
         
 class Actor(Entity):
     def __init__(self, color, default_speed=4.0):
-        super(Actor, self).__init__(color)
+        super().__init__(color)
         self.speed = default_speed
         self.change_dir()
     
@@ -136,7 +136,7 @@ class Zombie(Actor):
     ATTACK_WAIT_MAX = 25
     def __init__(self, color):
         self.angle = zutil.random_angle()
-        super(self.__class__, self).__init__(color, 2.0)
+        super().__init__(color, 2.0)
         self.attack_wait = random.randint(int(self.ATTACK_WAIT_MAX / 2), self.ATTACK_WAIT_MAX)
         
     def update(self, field):
@@ -152,7 +152,7 @@ class Zombie(Actor):
         elif victim_angle < self.angle:
             self.angle -= math.radians(10)
         self.current_dir = zutil.angle_to_dir(self.angle)
-        super(self.__class__, self).update(field)
+        super().update(field)
         #self.change_dir()
 
     def run_to_humans(self, field, goto):
@@ -179,7 +179,7 @@ class Zombie(Actor):
 class Human(Actor):
     VISION = 50
     def __init__(self, color):
-        super(self.__class__, self).__init__(color)
+        super().__init__(color)
         self.reset_lifetime()
         #self.freeze = 0
         
@@ -216,7 +216,7 @@ class Human(Actor):
         goto = (goto[0] + (1 * self.current_dir[0]), goto[1] + (1 * self.current_dir[1]))
         go_to_dir = zutil.dir_to(self.rect.center, goto)
         self.current_dir = go_to_dir
-        super(self.__class__, self).update(field)
+        super().update(field)
         
     def run_from_zombies(self, field, goto):
         span = zutil.span(field.rect)
@@ -256,7 +256,7 @@ class Human(Actor):
         
 class Consumable(Entity):
     def __init__(self, color, amount=5):
-        super(Consumable, self).__init__(color)
+        super().__init__(color)
         self.amount = amount
         
     def draw_image(self, color):
@@ -272,4 +272,4 @@ class Consumable(Entity):
         
 class Food(Consumable):
     def __init__(self, color):
-        super(self.__class__, self).__init__(color, amount=50)
+        super().__init__(color, amount=50)
