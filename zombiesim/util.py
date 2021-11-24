@@ -11,6 +11,8 @@ import random
 import time
 
 import pygame
+from zombiesim.types import Position
+from typing import Generator
 
 def str_diff_time(begin, time_func = time.time):
     end = int(round(time_func() - begin))
@@ -47,26 +49,26 @@ def random_direction():
     angle = random_angle()
     return angle_to_dir(angle)
 
-def random_angle():
+def random_angle()->float:
     return math.radians(random.randint(0, 359))
 
 def random_angle_change(angle, amount):
     change = math.radians(random.randint(-amount,amount))
     return angle + change;
 
-def xfrange(start, stop, step):
+def xfrange(start:float, stop:float, step:float) -> Generator[float, None, None]:
     current = start
     while ((step > 0 and current < stop) or (step < 0 and current > stop)):
         yield current
         current = current + step
         
-def diff_points(a,b):
+def diff_points(a:Position,b:Position) -> Position:
     return (a[0] - b[0], a[1] - b[1])
 
-def add_points(a,b):
+def add_points(a:Position,b:Position) -> Position:
     return (a[0] + b[0], a[1] + b[1])
 
-def make_full_screen():
+def make_full_screen() -> None:
     display_info = pygame.display.Info()
     flags = pygame.display.get_surface().get_flags()
     if not flags & pygame.FULLSCREEN:

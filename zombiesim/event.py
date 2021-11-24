@@ -5,10 +5,7 @@ Created on Dec 7, 2014
 '''
 
 import pygame
-from collections.abc import Callable
-
-EventCallback = Callable[[pygame.event.Event],None]
-Runnable = Callable[[], None]
+from zombiesim.types import EventCallback, Runnable
 
 class EventLookup(object):
     def __init__(self):
