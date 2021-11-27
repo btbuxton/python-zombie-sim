@@ -7,5 +7,7 @@ from collections.abc import Callable
 EventCallback = Callable[[pygame.event.Event], None]
 Runnable = Callable[[], None]
 
-Point = tuple[float, float]
+Point = tuple[int, int]
 Direction = tuple[float, float]
+
+PointProducer = Callable[[], Point]

@@ -28,7 +28,7 @@ def distance(origin: Point, dest: Point) -> float:
     return math.sqrt(((originy - desty) ** 2) + ((originx - destx) ** 2))
 
 
-def span(rect: pygame.Rect) -> float:
+def span(rect: pygame.rect.Rect) -> float:
     return distance(rect.topleft, rect.bottomright)
 
 
