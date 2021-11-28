@@ -12,7 +12,6 @@ from typing import Optional, Generic, TypeVar
 
 import zombiesim.util as zutil
 from zombiesim.types import PointProducer, Point
-from zombiesim.field import Field
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
@@ -31,7 +30,7 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
         entity.added_to_group(self)
         return entity
 
-    def closest_to(self, other: pygame.sprite.Sprite, field: Field, to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
+    def closest_to(self, other: pygame.sprite.Sprite, field, to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
         span = zutil.span(field.rect)
         span_mid = span / 2.0
         curmin: float = sys.maxsize
