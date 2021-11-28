@@ -15,7 +15,7 @@ SpriteCallback = Callable[[pygame.sprite.Sprite], None]
 SpriteFinder = Callable[[Point], list[pygame.sprite.Sprite]]
 
 
-class SpriteMover:
+class EntityMover:
     class Pickup:
         def __init__(self, sprite: Entity, pos: Point, on_pos_change: EntityCallback):
             self.sprite: Entity = sprite
@@ -43,7 +43,7 @@ class SpriteMover:
         self.on_sprite_change: EntityCallback = on_sprite_change
         self.on_mouse_up: EventCallback = lambda pos: None
         self.on_mouse_move: EventCallback = lambda pos: None
-        self.registry: dict[pygame.sprite.Sprite, SpriteMover.Pickup] = {}
+        self.registry: dict[pygame.sprite.Sprite, EntityMover.Pickup] = {}
         self.register_events(event_lookup)
 
     def register_events(self, events: EventLookup) -> None:

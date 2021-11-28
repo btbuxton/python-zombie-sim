@@ -7,8 +7,8 @@ import random
 import sys
 import pygame
 import math
-from collections.abc import Callable
-from typing import Optional
+from collections.abc import Callable, Iterator
+from typing import Optional, Generic, TypeVar
 
 import zombiesim.util as zutil
 from zombiesim.types import PointProducer, Point
@@ -16,9 +16,9 @@ from zombiesim.field import Field
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
+T = TypeVar('T')
 
-
-class EntityGroup(pygame.sprite.Group):
+class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __init__(self, clazz: type, color: pygame.Color):
         super().__init__()
         self.entity_class: type = clazz
@@ -34,14 +34,14 @@ class EntityGroup(pygame.sprite.Group):
     def closest_to(self, other: pygame.sprite.Sprite, field: Field, to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
         span = zutil.span(field.rect)
         span_mid = span / 2.0
-        curmin:float = sys.maxsize
+        curmin: float = sys.maxsize
         curactor = None
-        other_rect: pygame.rect.Rect = other.rect # type: ignore
+        other_rect: pygame.rect.Rect = other.rect  # type: ignore
         pos = other_rect.center
         for each in self.sprites():
             if not to_include(each):
                 continue
-            each_rect: pygame.rect.Rect = each.rect # type: ignore
+            each_rect: pygame.rect.Rect = each.rect  # type: ignore
             dist = zutil.distance(pos, each_rect.center)
             if dist > span_mid:
                 dist = span - dist
@@ -50,28 +50,30 @@ class EntityGroup(pygame.sprite.Group):
                 curactor = each
         return (curactor, curmin)
 
+    def __iter__(self) -> Iterator[T]: #type: ignore
+        return super().__iter__() # type: ignore
 
 class Entity(pygame.sprite.Sprite):
-    _mouse_groups:list[pygame.sprite.AbstractGroup]
+    _mouse_groups: list[pygame.sprite.AbstractGroup]
     rect: pygame.rect.Rect
 
     @classmethod
-    def create_group(clazz, size, color, point_getter:PointProducer)->EntityGroup:
-        all_group = EntityGroup(clazz, color)
+    def create_group(clazz,size:int, color:pygame.Color, point_getter: PointProducer) -> EntityGroup[T]:
+        all_group = EntityGroup[T](clazz, color)
         for _ in range(size):
             all_group.create_one(point_getter)
         return all_group
 
-    def __init__(self, color:pygame.Color):
+    def __init__(self, color: pygame.Color):
         super().__init__()
         self.color = color
         self.create_image()
         self._mouse_groups = []
 
-    def added_to_group(self, group:EntityGroup)->None:
+    def added_to_group(self, group: EntityGroup) -> None:
         pass
 
-    def create_image(self)->None:
+    def create_image(self) -> None:
         width = 10
         height = 10
         self.image = pygame.Surface([width, height], flags=pygame.SRCALPHA)
@@ -80,22 +82,22 @@ class Entity(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.radius = min(width, height) / 2
 
-    def draw_image(self, color:pygame.Color) -> None:
+    def draw_image(self, color: pygame.Color) -> None:
         pass
 
-    def reset_pos(self)->None:
+    def reset_pos(self) -> None:
         pass
 
-    def pick_up(self, pos:Point)->None:
+    def pick_up(self, pos: Point) -> None:
         groups = self.groups()
         self._mouse_groups = []
         for group in groups:
             group.remove(self)
             self._mouse_groups.append(group)
-        self_rect:pygame.rect.Rect = self.rect # type: ignore
+        self_rect: pygame.rect.Rect = self.rect  # type: ignore
         self._mouse_offset = zutil.diff_points(self_rect.center, pos)
 
-    def update_pick_up(self, pos:Point)->None:
+    def update_pick_up(self, pos: Point) -> None:
         self.rect.center = zutil.add_points(pos, self._mouse_offset)
         self.reset_pos()
 

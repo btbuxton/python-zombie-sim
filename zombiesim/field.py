@@ -8,13 +8,11 @@ import itertools
 import time
 import random
 import pygame
-from typing import Union
+from typing import Union, cast
 
-from zombiesim.entities import Food
-from zombiesim.entities import Human
-from zombiesim.entities import Zombie
+from zombiesim.entities import Food, Human, Zombie, EntityGroup
 
-from zombiesim.sprite_mover import SpriteMover
+from zombiesim.entity_mover import EntityMover
 from zombiesim.types import Point
 import zombiesim.util as zutil
 
@@ -26,18 +24,18 @@ class Field:
     MINUTE: int = 60 * SEC
 
     def __init__(self, start_zombies: int = 5, start_humans: int = 250, max_food: int = 2):
-        self.mover: Union[SpriteMover, None] = None
+        self.mover: Union[EntityMover, None] = None
         self.start_zombies: int = start_zombies
         self.start_humans: int = start_humans
         self.max_food: int = max_food
 
     def start(self, rect: pygame.rect.Rect) -> None:
         self.rect: pygame.rect.Rect = rect
-        self.zombies = Zombie.create_group(
+        self.zombies:EntityGroup[Zombie] = Zombie.create_group(
             self.start_zombies, pygame.Color('red'), self.point_creator)
-        self.humans = Human.create_group(
+        self.humans:EntityGroup[Human] = Human.create_group(
             self.start_humans, pygame.Color('pink'), self.point_creator)
-        self.food = Food.create_group(
+        self.food:EntityGroup[Food] = Food.create_group(
             self.max_food, pygame.Color('green'), self.point_creator)
         self.started = time.time()
 
@@ -59,26 +57,26 @@ class Field:
         events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
         events.every_do(5 * self.MINUTE, self.print_status)
         events.add_key_press(pygame.K_r, lambda _: self.restart())
-        self.mover = SpriteMover(
+        self.mover = EntityMover(
             events, self.entities_under, on_sprite_change=lambda entity: entity.reset_pos())
 
     def print_status(self):
         print('Update: humans: {0} zombies: {1}'.format(
             len(self.humans), len(self.zombies)))
 
-    def update(self, screen):
+    def update(self, screen)->None:
         self.rect = screen.get_rect()
         #self.killzone = self.create_killzone()
-        all_dead = []
+        all_dead:list[Human] = []
         for zombie in self.zombies:
-            dead = pygame.sprite.spritecollide(
-                zombie, self.humans, True, collided=pygame.sprite.collide_circle)
+            dead:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
+                zombie, self.humans, True, collided=pygame.sprite.collide_circle))
             all_dead.extend(dead)
         for human in all_dead:
             self.turn(human)
         for food in self.food:
-            eaten = pygame.sprite.spritecollide(
-                food, self.humans, False, collided=pygame.sprite.collide_rect)
+            eaten:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
+                food, self.humans, False, collided=pygame.sprite.collide_rect))
             for human in eaten:
                 if food.has_more():
                     human.eat_food(food)
