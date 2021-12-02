@@ -11,7 +11,7 @@ import pygame
 from typing import Union, cast
 
 from zombiesim.entities import Food, Human, Zombie, EntityGroup
-
+from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
 from zombiesim.types import Point
 import zombiesim.util as zutil
@@ -51,7 +51,7 @@ class Field:
         self.stop()
         self.start(self.rect)
 
-    def register_events(self, events) -> None:
+    def register_events(self, events: EventLookup) -> None:
         events.every_do(self.ZOMBIE_UPDATE_MS,
                         lambda: self.zombies.update(self))
         events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))

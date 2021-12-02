@@ -8,7 +8,7 @@ import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Optional, Generic, TypeVar
+from typing import Optional, Generic, TypeVar, Type
 
 import zombiesim.util as zutil
 from zombiesim.types import PointProducer, Point
@@ -17,13 +17,14 @@ SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
 T = TypeVar('T')
 
+
 class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __init__(self, clazz: type, color: pygame.Color):
         super().__init__()
         self.entity_class: type = clazz
         self.color: pygame.Color = color
 
-    def create_one(self, point_getter: PointProducer) -> 'Entity':
+    def create_one(self, point_getter: PointProducer) -> T:
         entity = self.entity_class(self.color)
         self.add(entity)
         entity.rect.center = point_getter()
@@ -49,16 +50,18 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
                 curactor = each
         return (curactor, curmin)
 
-    def __iter__(self) -> Iterator[T]: #type: ignore
-        return super().__iter__() # type: ignore
+    def __iter__(self) -> Iterator[T]:  # type: ignore
+        return super().__iter__()  # type: ignore
+
 
 class Entity(pygame.sprite.Sprite):
     _mouse_groups: list[pygame.sprite.AbstractGroup]
     rect: pygame.rect.Rect
+    image: pygame.Surface
 
     @classmethod
-    def create_group(clazz,size:int, color:pygame.Color, point_getter: PointProducer) -> EntityGroup[T]:
-        all_group = EntityGroup[T](clazz, color)
+    def create_group(cls: Type[T], size: int, color: pygame.Color, point_getter: PointProducer) -> EntityGroup[T]:
+        all_group = EntityGroup[T](cls, color)
         for _ in range(size):
             all_group.create_one(point_getter)
         return all_group
@@ -100,7 +103,7 @@ class Entity(pygame.sprite.Sprite):
         self.rect.center = zutil.add_points(pos, self._mouse_offset)
         self.reset_pos()
 
-    def put_down(self, pos):
+    def put_down(self, pos: Point):
         self.update_pick_up(pos)
         for group in self._mouse_groups:
             group.add(self)
@@ -109,29 +112,29 @@ class Entity(pygame.sprite.Sprite):
 
 
 class Actor(Entity):
-    def __init__(self, color, default_speed=4.0):
+    def __init__(self, color: pygame.Color, default_speed: float = 4.0) -> None:
         super().__init__(color)
         self.speed = default_speed
         self.change_dir()
 
-    def added_to_group(self, group):
+    def added_to_group(self, group: EntityGroup['Actor']) -> None:
         self.reset_pos()
 
-    def draw_image(self, color):
+    def draw_image(self, color: pygame.Color) -> None:
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
 
-    def reset_pos(self):
+    def reset_pos(self) -> None:
         self.x = float(self.rect.x)
         self.y = float(self.rect.y)
 
-    def update_pos(self, direc):
+    def update_pos(self, direc: tuple[float, float]) -> None:
         dirx, diry = direc
         self.x = self.x + (dirx * self.speed)
         self.y = self.y + (diry * self.speed)
         self.rect.x = int(round(self.x))
         self.rect.y = int(round(self.y))
 
-    def hit_edge(self, parent_rect):
+    def hit_edge(self, parent_rect: pygame.rect.Rect) -> None:
         if self.rect.left < parent_rect.left:
             self.rect.right = parent_rect.right
         if self.rect.right > parent_rect.right:
@@ -142,7 +145,7 @@ class Actor(Entity):
             self.rect.top = parent_rect.top
         self.reset_pos()
 
-    def change_dir(self):
+    def change_dir(self) -> None:
         self.current_dir = zutil.random_direction()
 
     def update(self, field):
@@ -153,7 +156,7 @@ class Zombie(Actor):
     VISION = 100
     ATTACK_WAIT_MAX = 25
 
-    def __init__(self, color):
+    def __init__(self, color: pygame.Color):
         self.angle = zutil.random_angle()
         super().__init__(color, 2.0)
         self.attack_wait = random.randint(
@@ -176,7 +179,7 @@ class Zombie(Actor):
         super().update(field)
         # self.change_dir()
 
-    def run_to_humans(self, field, goto):
+    def run_to_humans(self, field, goto: Point) -> Point:
         span = zutil.span(field.rect)
         span_mid = span / 2.0
         victim, _ = field.humans.closest_to(self, field)
@@ -190,11 +193,11 @@ class Zombie(Actor):
                 factor_dist = float(self.VISION - dist)
                 goto_x, goto_y = goto
                 dir_x, dir_y = direc
-                goto = (goto_x + (factor_dist * dir_x),
-                        goto_y + (factor_dist * dir_y))
+                goto = (int(goto_x + (factor_dist * dir_x)),
+                        int(goto_y + (factor_dist * dir_y)))
         return goto
 
-    def change_dir(self):
+    def change_dir(self) -> None:
         self.angle = zutil.random_angle_change(self.angle, 10)
         self.current_dir = zutil.angle_to_dir(self.angle)
 
