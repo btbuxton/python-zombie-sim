@@ -8,7 +8,7 @@ import itertools
 import time
 import random
 import pygame
-from typing import Union, cast
+from typing import Optional, cast
 
 from zombiesim.entities import Food, Human, Zombie, EntityGroup
 from zombiesim.event import EventLookup
@@ -24,7 +24,7 @@ class Field:
     MINUTE: int = 60 * SEC
 
     def __init__(self, start_zombies: int = 5, start_humans: int = 250, max_food: int = 2):
-        self.mover: Union[EntityMover, None] = None
+        self.mover: Optional[EntityMover] = None
         self.start_zombies: int = start_zombies
         self.start_humans: int = start_humans
         self.max_food: int = max_food

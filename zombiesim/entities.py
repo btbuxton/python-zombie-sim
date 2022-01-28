@@ -15,17 +15,17 @@ from zombiesim.types import PointProducer, Point
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
-T = TypeVar('T')
+T = TypeVar('T', bound='Entity')
 
 
 class EntityGroup(pygame.sprite.Group, Generic[T]):
-    def __init__(self, clazz: type, color: pygame.Color):
+    def __init__(self, clazz: type[T], color: pygame.Color):
         super().__init__()
-        self.entity_class: type = clazz
+        self.entity_class: type[T] = clazz
         self.color: pygame.Color = color
 
     def create_one(self, point_getter: PointProducer) -> T:
-        entity = self.entity_class(self.color)
+        entity: T = self.entity_class(self.color)
         self.add(entity)
         entity.rect.center = point_getter()
         entity.added_to_group(self)
@@ -168,8 +168,8 @@ class Zombie(Actor):
             return
         goto = self.rect.center
         goto = self.run_to_humans(field, goto)
-        goto = (goto[0] + (1 * self.current_dir[0]),
-                goto[1] + (1 * self.current_dir[1]))
+        goto = (goto[0] + (self.current_dir[0]),
+                goto[1] + (self.current_dir[1]))
         victim_angle = zutil.angle_to(self.rect.center, goto)
         if victim_angle > self.angle:
             self.angle += math.radians(10)
@@ -240,8 +240,8 @@ class Human(Actor):
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
-        goto = (goto[0] + (1 * self.current_dir[0]),
-                goto[1] + (1 * self.current_dir[1]))
+        goto = (goto[0] + (self.current_dir[0]),
+                goto[1] + (self.current_dir[1]))
         go_to_dir = zutil.dir_to(self.rect.center, goto)
         self.current_dir = go_to_dir
         super().update(field)

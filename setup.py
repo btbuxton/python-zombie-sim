@@ -1,10 +1,7 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 config = {
-    'python_requires': '>=3',
+    'python_requires': '>=3.9',
     'description': 'Zombie Simulation',
     'author': 'Blaine Buxton',
     'url': 'http://blabux.net',
@@ -12,7 +9,7 @@ config = {
     'author_email': 'btbuxton@gmail.com',
     'version': '0.1',
     'install_requires': ['pygame'],
-    'packages': ['zombiesim'],
+    'packages': find_packages(),
     'scripts': [],
     'name': 'zombie-sim'
 }
