@@ -86,20 +86,27 @@ class Field:
             self.stop()
             self.start(self.rect)
 
-    def all_dead(self):
-        return not self.humans and not self.mover.under_mouse
+    def all_dead(self) -> bool:
+        no_humans = not self.humans
+        if self.mover:
+            return no_humans and not self.mover.under_mouse
+        return no_humans
 
     def check_food(self):
-        while (len(self.food) + len(self.mover.under_mouse)) < self.max_food:
+        num_under_mouse = 0
+        if self.mover:
+            num_under_mouse = len(self.mover.under_mouse)
+        while (len(self.food) + num_under_mouse) < self.max_food:
             self.food.create_one(self.point_creator)
 
-    def draw(self, screen):
+    def draw(self, screen) -> None:
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
-        self.mover.draw(screen)
+        if self.mover:
+            self.mover.draw(screen)
 
-    def turn(self, human):
+    def turn(self, human: Human) -> None:
         self.zombies.create_one(lambda: human.rect.center)
 
     def check_and_fix_edges(self):

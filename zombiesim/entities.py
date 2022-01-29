@@ -168,9 +168,8 @@ class Zombie(Actor):
             return
         goto = self.rect.center
         goto = self.run_to_humans(field, goto)
-        goto = (goto[0] + (self.current_dir[0]),
-                goto[1] + (self.current_dir[1]))
-        victim_angle = zutil.angle_to(self.rect.center, goto)
+        next_point = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
+        victim_angle = zutil.angle_to(self.rect.center, next_point)
         if victim_angle > self.angle:
             self.angle += math.radians(10)
         elif victim_angle < self.angle:
@@ -240,9 +239,8 @@ class Human(Actor):
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
-        goto = (goto[0] + (self.current_dir[0]),
-                goto[1] + (self.current_dir[1]))
-        go_to_dir = zutil.dir_to(self.rect.center, goto)
+        next_pos = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
+        go_to_dir = zutil.dir_to(self.rect.center, next_pos)
         self.current_dir = go_to_dir
         super().update(field)
 

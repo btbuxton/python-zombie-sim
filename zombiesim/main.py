@@ -8,6 +8,7 @@ import pygame
 
 from zombiesim.event import EventLookup
 from zombiesim.field import Field
+from zombiesim.types import EventCallback
 import zombiesim.util as zutil
 
 
@@ -28,7 +29,9 @@ def main() -> None:
     pygame.display.set_caption("Zombie Simulation")
 
     events = EventLookup()
-    events.add(pygame.QUIT, lambda _: Done.raise_it())
+    def callback(_) -> None:
+        raise Done()
+    events.add(pygame.QUIT, callback)
 
     def set_screen(event):
         pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
