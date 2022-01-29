@@ -8,9 +8,9 @@ import itertools
 import time
 import random
 import pygame
-from typing import Optional, cast
+from typing import Optional, cast, Iterable
 
-from zombiesim.entities import Food, Human, Zombie, EntityGroup
+from zombiesim.entities import Entity, Food, Human, Zombie, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
 from zombiesim.types import Point
@@ -92,7 +92,7 @@ class Field:
             return no_humans and not self.mover.under_mouse
         return no_humans
 
-    def check_food(self):
+    def check_food(self) -> None:
         num_under_mouse = 0
         if self.mover:
             num_under_mouse = len(self.mover.under_mouse)
@@ -109,7 +109,7 @@ class Field:
     def turn(self, human: Human) -> None:
         self.zombies.create_one(lambda: human.rect.center)
 
-    def check_and_fix_edges(self):
+    def check_and_fix_edges(self) -> None:
         def check_and_fix(actor, parent_rect):
             if not parent_rect.contains(actor.rect):
                 actor.hit_edge(parent_rect)
@@ -118,6 +118,6 @@ class Field:
         for each in self.humans.sprites():
             check_and_fix(each, self.rect)
 
-    def entities_under(self, pos):
+    def entities_under(self, pos: Point) -> Iterable[Entity]:
         return [each for each in itertools.chain(self.humans, self.zombies, self.food)
                 if each.rect.collidepoint(pos)]

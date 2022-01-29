@@ -4,6 +4,7 @@ Created on Dec 8, 2014
 @author: bbuxton
 '''
 
+from typing import Iterable
 import pygame
 from zombiesim.event import EventLookup
 import zombiesim.util as zutil
@@ -12,7 +13,7 @@ from zombiesim.entities import Entity, EntityCallback
 from collections.abc import Callable
 
 SpriteCallback = Callable[[pygame.sprite.Sprite], None]
-SpriteFinder = Callable[[Point], list[pygame.sprite.Sprite]]
+SpriteFinder = Callable[[Point], Iterable[Entity]]
 
 
 class EntityMover:
