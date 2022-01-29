@@ -5,12 +5,13 @@ Created on Dec 8, 2014
 '''
 
 from typing import Iterable
+from collections.abc import Callable
+
 import pygame
 from zombiesim.event import EventLookup
 import zombiesim.util as zutil
 from zombiesim.types import Point, EventCallback
 from zombiesim.entities import Entity, EntityCallback
-from collections.abc import Callable
 
 SpriteCallback = Callable[[pygame.sprite.Sprite], None]
 SpriteFinder = Callable[[Point], Iterable[Entity]]
@@ -26,6 +27,7 @@ class EntityMover:
             self.on_pos_change: EntityCallback = on_pos_change
 
         def up(self) -> None:
+            # pylint: disable=invalid-name
             for each in self.groups:
                 each.remove(self.sprite)
 
@@ -38,7 +40,10 @@ class EntityMover:
             self.sprite.rect.center = new_center  # type: ignore
             self.on_pos_change(self.sprite)
 
-    def __init__(self, event_lookup: EventLookup, sprite_finder_func: SpriteFinder, on_sprite_change: EntityCallback = lambda sprite: None):
+    def __init__(self,
+                 event_lookup: EventLookup,
+                 sprite_finder_func: SpriteFinder,
+                 on_sprite_change: EntityCallback = lambda sprite: None):
         self.under_mouse: pygame.sprite.Group = pygame.sprite.Group()
         self.sprite_finder_func: SpriteFinder = sprite_finder_func
         self.on_sprite_change: EntityCallback = on_sprite_change
@@ -48,6 +53,7 @@ class EntityMover:
         self.register_events(event_lookup)
 
     def register_events(self, events: EventLookup) -> None:
+        # pylint: disable=no-member
         events.add(pygame.MOUSEBUTTONDOWN, self.mouse_down)
         events.add(pygame.MOUSEMOTION, self.mouse_move)
         events.add(pygame.MOUSEBUTTONUP, self.mouse_up)

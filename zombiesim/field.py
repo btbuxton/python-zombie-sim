@@ -7,9 +7,9 @@ Created on Dec 7, 2014
 import itertools
 import time
 import random
-import pygame
 from typing import Optional, cast, Iterable
 
+import pygame
 from zombiesim.entities import Entity, Food, Human, Zombie, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
