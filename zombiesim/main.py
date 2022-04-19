@@ -8,7 +8,6 @@ import pygame
 
 from zombiesim.event import EventLookup
 from zombiesim.field import Field
-from zombiesim.types import EventCallback
 import zombiesim.util as zutil
 
 

@@ -8,7 +8,7 @@ import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Optional, Generic, TypeVar, Type
+from typing import Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
 from zombiesim.types import PointProducer, Point
@@ -31,12 +31,17 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
         entity.added_to_group(self)
         return entity
 
-    def closest_to(self, other: pygame.sprite.Sprite, field, to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
-        span = zutil.span(field.rect)
+    def closest_to(self, 
+                   other: pygame.sprite.Sprite, 
+                   rect: pygame.rect.Rect, 
+                   to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
+        span = zutil.span(rect)
         span_mid = span / 2.0
         curmin: float = sys.maxsize
         curactor = None
-        other_rect: pygame.rect.Rect = other.rect  # type: ignore
+        other_rect: Optional[pygame.rect.Rect] = other.rect
+        if other_rect is None:
+            return (None, 0.0)
         pos = other_rect.center
         for each in self.sprites():
             if not to_include(each):
@@ -50,8 +55,8 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
                 curactor = each
         return (curactor, curmin)
 
-    def __iter__(self) -> Iterator[T]:  # type: ignore
-        return super().__iter__()  # type: ignore
+    def __iter__(self) -> Iterator[T]:
+        return cast(Iterator[T],super().__iter__())
 
 
 class Entity(pygame.sprite.Sprite):
@@ -181,7 +186,7 @@ class Zombie(Actor):
     def run_to_humans(self, field, goto: Point) -> Point:
         span = zutil.span(field.rect)
         span_mid = span / 2.0
-        victim, _ = field.humans.closest_to(self, field)
+        victim, _ = field.humans.closest_to(self, field.rect)
         if victim is not None:
             direc = zutil.dir_to(self.rect.center, victim.rect.center)
             dist = zutil.distance(self.rect.center, victim.rect.center)
@@ -269,7 +274,7 @@ class Human(Actor):
         if self.is_hungry():
             span = zutil.span(field.rect)
             span_mid = span / 2.0
-            food, _ = field.food.closest_to(self, field)
+            food, _ = field.food.closest_to(self, field.rect)
             if food is not None:
                 direc = zutil.dir_to(self.rect.center, food.rect.center)
                 dist = zutil.distance(self.rect.center, food.rect.center)
