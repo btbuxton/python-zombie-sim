@@ -1,9 +1,9 @@
 ## Optional Typing Presentation
 
 * Why?
--- * IDE Auto completion
--- * Self documenting
--- * Catch type mismatches
+  * IDE Auto completion
+  * Self documenting
+  * Catch type mismatches
 * Base types (str, int, bool, float, etc)
 * Collections (list, set, dict, tuple ,etc)
 * Generators
