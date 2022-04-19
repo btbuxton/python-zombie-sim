@@ -1,10 +1,14 @@
 ## Optional Typing Presentation
 
+* Why?
+-- * IDE Auto completion
+-- * Self documenting
+-- * Catch type mismatches
 * Base types (str, int, bool, float, etc)
 * Collections (list, set, dict, tuple ,etc)
 * Generators
 * Optional
-* Callable
+* Callable (Keep it simple)
 * Protocols
 
 * mypy
