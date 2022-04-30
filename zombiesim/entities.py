@@ -8,7 +8,7 @@ import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Optional, Generic, TypeVar, Type, cast
+from typing import Any, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
 from zombiesim.types import PointProducer, Point
@@ -153,7 +153,7 @@ class Actor(Entity):
     def change_dir(self) -> None:
         self.current_dir = zutil.random_direction()
 
-    def update(self, field):
+    def update(self, field) -> None: # type: ignore
         self.update_pos(self.current_dir)
 
 
@@ -167,12 +167,12 @@ class Zombie(Actor):
         self.attack_wait = random.randint(
             int(self.ATTACK_WAIT_MAX / 2), self.ATTACK_WAIT_MAX)
 
-    def update(self, field):
+    def update(self, field) -> None: # type: ignore
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
         goto = self.rect.center
-        goto = self.run_to_humans(field, goto)
+        goto = self.run_to_humans(field.humans, field.rect, goto)
         next_point = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
         victim_angle = zutil.angle_to(self.rect.center, next_point)
         if victim_angle > self.angle:
@@ -181,24 +181,27 @@ class Zombie(Actor):
             self.angle -= math.radians(10)
         self.current_dir = zutil.angle_to_dir(self.angle)
         super().update(field)
-        # self.change_dir()
 
-    def run_to_humans(self, field, goto: Point) -> Point:
-        span = zutil.span(field.rect)
+    def run_to_humans(self, humans: Any, bounds: pygame.Rect, goto: Point) -> Point:
+        victim, _ = humans.closest_to(self, bounds)
+        if victim is None:
+            return goto
+        victim_rect = victim.rect
+        if victim_rect is None:
+            return goto
+        span = zutil.span(bounds)
         span_mid = span / 2.0
-        victim, _ = field.humans.closest_to(self, field.rect)
-        if victim is not None:
-            direc = zutil.dir_to(self.rect.center, victim.rect.center)
-            dist = zutil.distance(self.rect.center, victim.rect.center)
-            if dist > span_mid:
-                dist = span - dist
-                direc = zutil.opposite_dir(direc)
-            if dist < self.VISION:
-                factor_dist = float(self.VISION - dist)
-                goto_x, goto_y = goto
-                dir_x, dir_y = direc
-                goto = (int(goto_x + (factor_dist * dir_x)),
-                        int(goto_y + (factor_dist * dir_y)))
+        direc = zutil.dir_to(self.rect.center, victim_rect.center)
+        dist = zutil.distance(self.rect.center, victim_rect.center)
+        if dist > span_mid:
+            dist = span - dist
+            direc = zutil.opposite_dir(direc)
+        if dist < self.VISION:
+            factor_dist = float(self.VISION - dist)
+            goto_x, goto_y = goto
+            dir_x, dir_y = direc
+            goto = (int(goto_x + (factor_dist * dir_x)),
+                    int(goto_y + (factor_dist * dir_y)))
         return goto
 
     def change_dir(self) -> None:
@@ -209,7 +212,7 @@ class Zombie(Actor):
 class Human(Actor):
     VISION = 50
 
-    def __init__(self, color):
+    def __init__(self, color: pygame.Color):
         super().__init__(color)
         self.reset_lifetime()
         #self.freeze = 0
