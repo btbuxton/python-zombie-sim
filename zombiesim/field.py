@@ -16,13 +16,12 @@ from zombiesim.entity_mover import EntityMover
 from zombiesim.types import Point
 import zombiesim.util as zutil
 
+SEC: int = 1000
+MINUTE: int = 60 * SEC
+ZOMBIE_UPDATE_MS: int = 200
+HUMAN_UPDATE_MS: int = 100
 
 class Field:
-    ZOMBIE_UPDATE_MS: int = 200
-    HUMAN_UPDATE_MS: int = 100
-    SEC: int = 1000
-    MINUTE: int = 60 * SEC
-
     def __init__(self, start_zombies: int = 5, start_humans: int = 250, max_food: int = 2):
         self.mover: Optional[EntityMover] = None
         self.start_zombies: int = start_zombies
@@ -52,10 +51,9 @@ class Field:
         self.start(self.rect)
 
     def register_events(self, events: EventLookup) -> None:
-        events.every_do(self.ZOMBIE_UPDATE_MS,
-                        lambda: self.zombies.update(self))
-        events.every_do(self.HUMAN_UPDATE_MS, lambda: self.humans.update(self))
-        events.every_do(5 * self.MINUTE, self.print_status)
+        events.every_do(ZOMBIE_UPDATE_MS,lambda: self.zombies.update(self))
+        events.every_do(HUMAN_UPDATE_MS, lambda: self.humans.update(self))
+        events.every_do(5 * MINUTE, self.print_status)
         events.add_key_press(pygame.K_r, lambda _: self.restart())
         self.mover = EntityMover(
             events, self.entities_under, on_sprite_change=lambda entity: entity.reset_pos())
@@ -66,25 +64,30 @@ class Field:
 
     def update(self, screen)->None:
         self.rect = screen.get_rect()
-        #self.killzone = self.create_killzone()
-        all_dead:list[Human] = []
-        for zombie in self.zombies:
-            dead:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
-                zombie, self.humans, True, collided=pygame.sprite.collide_circle))
-            all_dead.extend(dead)
-        for human in all_dead:
-            self.turn(human)
+        self.update_humans_to_zombies()
+        self.update_eaten_food()
+        self.check_and_fix_edges()
+        self.check_food()
+        if self.all_dead():
+            self.stop()
+            self.start(self.rect)
+
+    def update_eaten_food(self):
         for food in self.food:
             eaten:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
                 food, self.humans, False, collided=pygame.sprite.collide_rect))
             for human in eaten:
                 if food.has_more():
                     human.eat_food(food)
-        self.check_and_fix_edges()
-        self.check_food()
-        if self.all_dead():
-            self.stop()
-            self.start(self.rect)
+
+    def update_humans_to_zombies(self) -> None:
+        all_dead:list[Human] = []
+        for zombie in self.zombies:
+            dead:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
+                zombie, self.humans, True, collided=pygame.sprite.collide_circle))
+            all_dead += dead
+        for human in all_dead:
+            self.turn(human)
 
     def all_dead(self) -> bool:
         no_humans = not self.humans
@@ -97,7 +100,8 @@ class Field:
         if self.mover:
             num_under_mouse = len(self.mover.under_mouse)
         while (len(self.food) + num_under_mouse) < self.max_food:
-            self.food.create_one(self.point_creator)
+            new_food = self.food.create_one()
+            new_food.rect.center = self.point_creator()
 
     def draw(self, screen) -> None:
         self.food.draw(screen)
@@ -107,7 +111,8 @@ class Field:
             self.mover.draw(screen)
 
     def turn(self, human: Human) -> None:
-        self.zombies.create_one(lambda: human.rect.center)
+        new_zombie = self.zombies.create_one()
+        new_zombie.rect.center = human.rect.center
 
     def check_and_fix_edges(self) -> None:
         def check_and_fix(actor, parent_rect):

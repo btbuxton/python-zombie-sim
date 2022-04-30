@@ -24,11 +24,9 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
         self.entity_class: type[T] = clazz
         self.color: pygame.Color = color
 
-    def create_one(self, point_getter: PointProducer) -> T:
+    def create_one(self) -> T:
         entity: T = self.entity_class(self.color)
         self.add(entity)
-        entity.rect.center = point_getter()
-        entity.added_to_group(self)
         return entity
 
     def closest_to(self, 
@@ -68,7 +66,8 @@ class Entity(pygame.sprite.Sprite):
     def create_group(cls: Type[T], size: int, color: pygame.Color, point_getter: PointProducer) -> EntityGroup[T]:
         all_group = EntityGroup[T](cls, color)
         for _ in range(size):
-            all_group.create_one(point_getter)
+            new_entity = all_group.create_one()
+            new_entity.rect.center = point_getter()
         return all_group
 
     def __init__(self, color: pygame.Color):
@@ -77,8 +76,6 @@ class Entity(pygame.sprite.Sprite):
         self.create_image()
         self._mouse_groups = []
 
-    def added_to_group(self, group: EntityGroup) -> None:
-        pass
 
     def create_image(self) -> None:
         width = 10
@@ -122,22 +119,23 @@ class Actor(Entity):
         self.speed = default_speed
         self.change_dir()
 
-    def added_to_group(self, group: EntityGroup['Actor']) -> None:
-        self.reset_pos()
+    @property
+    def x(self) -> int:
+        return self.rect.x
+
+    @property
+    def y(self) -> int:
+        return self.rect.y
 
     def draw_image(self, color: pygame.Color) -> None:
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
 
-    def reset_pos(self) -> None:
-        self.x = float(self.rect.x)
-        self.y = float(self.rect.y)
-
     def update_pos(self, direc: tuple[float, float]) -> None:
         dirx, diry = direc
-        self.x = self.x + (dirx * self.speed)
-        self.y = self.y + (diry * self.speed)
-        self.rect.x = int(round(self.x))
-        self.rect.y = int(round(self.y))
+        new_x = self.x + (dirx * self.speed)
+        new_y = self.y + (diry * self.speed)
+        self.rect.x = int(round(new_x))
+        self.rect.y = int(round(new_y))
 
     def hit_edge(self, parent_rect: pygame.rect.Rect) -> None:
         if self.rect.left < parent_rect.left:
@@ -148,7 +146,6 @@ class Actor(Entity):
             self.rect.bottom = parent_rect.bottom
         if self.rect.bottom > parent_rect.bottom:
             self.rect.top = parent_rect.top
-        self.reset_pos()
 
     def change_dir(self) -> None:
         self.current_dir = zutil.random_direction()
