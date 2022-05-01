@@ -10,10 +10,10 @@ import random
 from typing import Optional, cast, Iterable
 
 import pygame
-from zombiesim.entities import Entity, Food, Human, Zombie, EntityGroup
+from zombiesim.entities import Entity, FoodSprite, HumanSprite, ZombieSprite, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
-from zombiesim.types import Point
+from zombiesim.types import Point, Bounds
 import zombiesim.util as zutil
 
 SEC: int = 1000
@@ -28,13 +28,17 @@ class Field:
         self.start_humans: int = start_humans
         self.max_food: int = max_food
 
+    @property
+    def bounds(self) -> Bounds:
+        return self.rect
+
     def start(self, rect: pygame.rect.Rect) -> None:
         self.rect: pygame.rect.Rect = rect
-        self.zombies:EntityGroup[Zombie] = Zombie.create_group(
+        self.zombies:EntityGroup[ZombieSprite] = ZombieSprite.create_group(
             self.start_zombies, pygame.Color('red'), self.point_creator)
-        self.humans:EntityGroup[Human] = Human.create_group(
+        self.humans:EntityGroup[HumanSprite] = HumanSprite.create_group(
             self.start_humans, pygame.Color('pink'), self.point_creator)
-        self.food:EntityGroup[Food] = Food.create_group(
+        self.food:EntityGroup[FoodSprite] = FoodSprite.create_group(
             self.max_food, pygame.Color('green'), self.point_creator)
         self.started = time.time()
 
@@ -77,16 +81,16 @@ class Field:
 
     def update_eaten_food(self):
         for food in self.food:
-            eaten:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
+            eaten:list[HumanSprite] = cast(list[HumanSprite], pygame.sprite.spritecollide(
                 food, self.humans, False, collided=pygame.sprite.collide_rect))
             for human in eaten:
                 if food.has_more():
                     human.eat_food(food)
 
     def update_humans_to_zombies(self) -> None:
-        dead_list:list[Human] = []
+        dead_list:list[HumanSprite] = []
         for zombie in self.zombies:
-            dead:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
+            dead:list[HumanSprite] = cast(list[HumanSprite], pygame.sprite.spritecollide(
                 zombie, self.humans, True, collided=pygame.sprite.collide_circle))
             dead_list += dead
         for human in dead_list:
@@ -113,7 +117,7 @@ class Field:
         if self.mover:
             self.mover.draw(screen)
 
-    def turn(self, human: Human) -> None:
+    def turn(self, human: HumanSprite) -> None:
         new_zombie = self.zombies.create_one()
         new_zombie.rect.center = human.rect.center
 

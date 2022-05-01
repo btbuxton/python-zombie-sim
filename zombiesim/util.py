@@ -11,7 +11,7 @@ import random
 import time
 
 import pygame
-from zombiesim.types import Point, Direction
+from zombiesim.types import Bounds, Point, Direction
 from collections.abc import Generator
 
 
@@ -28,7 +28,7 @@ def distance(origin: Point, dest: Point) -> float:
     return math.sqrt(((originy - desty) ** 2) + ((originx - destx) ** 2))
 
 
-def span(rect: pygame.rect.Rect) -> float:
+def span(rect: Bounds) -> float:
     return distance(rect.topleft, rect.bottomright)
 
 

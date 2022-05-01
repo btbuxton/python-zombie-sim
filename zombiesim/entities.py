@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterator
 from typing import Any, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import PointProducer, Point
+from zombiesim.types import Bounds, Food, PointProducer, Point, World
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
@@ -112,6 +112,15 @@ class Entity(pygame.sprite.Sprite):
         del self._mouse_groups
         del self._mouse_offset
 
+    def update(self, *args, **kwargs) -> None:
+        """ Let's be honest - this is to make the typing system happy"""
+        self.update_state(args[0])
+        super().update(*args, **kwargs)
+
+    def update_state(self, field: World) -> None:
+        pass
+
+
 
 class Actor(Entity):
     def __init__(self, color: pygame.Color, default_speed: float = 4.0):
@@ -150,11 +159,12 @@ class Actor(Entity):
     def change_dir(self) -> None:
         self.current_dir = zutil.random_direction()
 
-    def update(self, field) -> None: # type: ignore
+    def update_state(self, field: World) -> None:
         self.update_pos(self.current_dir)
+        super().update_state(field)
 
 
-class Zombie(Actor):
+class ZombieSprite(Actor):
     VISION = 100
     ATTACK_WAIT_MAX = 25
 
@@ -164,12 +174,12 @@ class Zombie(Actor):
         self.attack_wait = random.randint(
             int(self.ATTACK_WAIT_MAX / 2), self.ATTACK_WAIT_MAX)
 
-    def update(self, field) -> None: # type: ignore
+    def update_state(self, field: World) -> None:
         if self.attack_wait > 0:
             self.attack_wait = self.attack_wait - 1
             return
         goto = self.rect.center
-        goto = self.run_to_humans(field.humans, field.rect, goto)
+        goto = self.run_to_humans(field.humans, field.bounds, goto)
         next_point = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
         victim_angle = zutil.angle_to(self.rect.center, next_point)
         if victim_angle > self.angle:
@@ -177,9 +187,9 @@ class Zombie(Actor):
         elif victim_angle < self.angle:
             self.angle -= math.radians(10)
         self.current_dir = zutil.angle_to_dir(self.angle)
-        super().update(field)
+        super().update_state(field)
 
-    def run_to_humans(self, humans: Any, bounds: pygame.Rect, goto: Point) -> Point:
+    def run_to_humans(self, humans: Any, bounds: Bounds, goto: Point) -> Point:
         victim, _ = humans.closest_to(self, bounds)
         if victim is None:
             return goto
@@ -206,7 +216,7 @@ class Zombie(Actor):
         self.current_dir = zutil.angle_to_dir(self.angle)
 
 
-class Human(Actor):
+class HumanSprite(Actor):
     VISION = 50
 
     def __init__(self, color: pygame.Color):
@@ -214,7 +224,7 @@ class Human(Actor):
         self.reset_lifetime()
         #self.freeze = 0
 
-    def eat_food(self, food: 'Food') -> None:
+    def eat_food(self, food: Food) -> None:
         if self.is_hungry():
             food.consume()
             self.reset_lifetime()
@@ -233,7 +243,7 @@ class Human(Actor):
         result = self.speed / 2.0
         return min(result, 1)
 
-    def update(self, field) -> None: # type: ignore
+    def update_state(self, field: World) -> None:
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
@@ -246,7 +256,7 @@ class Human(Actor):
         next_pos = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
         go_to_dir = zutil.dir_to(self.rect.center, next_pos)
         self.current_dir = go_to_dir
-        super().update(field)
+        super().update_state(field)
 
     def run_from_zombies(self, field, goto: Point) -> Point:
         span = zutil.span(field.rect)
@@ -303,6 +313,6 @@ class Consumable(Entity):
         return self.amount > 0
 
 
-class Food(Consumable):
+class FoodSprite(Consumable):
     def __init__(self, color):
         super().__init__(color, amount=50)
