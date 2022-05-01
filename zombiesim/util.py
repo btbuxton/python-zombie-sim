@@ -9,13 +9,14 @@ Various utility functions that don't fit into objects yet
 import math
 import random
 import time
+from typing import Callable
 
 import pygame
 from zombiesim.types import Bounds, Point, Direction
 from collections.abc import Generator
 
 
-def str_diff_time(begin, time_func=time.time):
+def str_diff_time(begin: float, time_func:Callable[[], float]=time.time) -> str:
     end = int(round(time_func() - begin))
     rest, seconds = divmod(end, 60)
     hours, minutes = divmod(rest, 60)

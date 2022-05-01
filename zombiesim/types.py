@@ -15,8 +15,6 @@ Direction = tuple[float, float]
 PointProducer = Callable[[], Point]
 
 class Bounds(Protocol):
-#    width: int
-#    height: int
     topleft: Point
     bottomright: Point
 

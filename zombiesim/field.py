@@ -10,7 +10,7 @@ import random
 from typing import Optional, cast, Iterable
 
 import pygame
-from zombiesim.entities import Entity, FoodSprite, HumanSprite, ZombieSprite, EntityGroup
+from zombiesim.entities import Actor, Entity, FoodSprite, HumanSprite, ZombieSprite, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
 from zombiesim.types import Point, Bounds
@@ -66,7 +66,7 @@ class Field:
         print('Update: humans: {0} zombies: {1}'.format(
             len(self.humans), len(self.zombies)))
 
-    def update(self, screen) -> None:
+    def update(self, screen: pygame.surface.Surface) -> None:
         self.rect = screen.get_rect()
         self.update_humans_to_zombies()
         self.update_eaten_food()
@@ -110,7 +110,7 @@ class Field:
             new_food = self.food.create_one()
             new_food.rect.center = self.point_creator()
 
-    def draw(self, screen) -> None:
+    def draw(self, screen: pygame.surface.Surface) -> None:
         self.food.draw(screen)
         self.humans.draw(screen)
         self.zombies.draw(screen)
@@ -122,7 +122,7 @@ class Field:
         new_zombie.rect.center = human.rect.center
 
     def check_and_fix_edges(self) -> None:
-        def check_and_fix(actor, parent_rect):
+        def check_and_fix(actor: pygame.sprite.Sprite, parent_rect):
             if not parent_rect.contains(actor.rect):
                 actor.hit_edge(parent_rect)
         for each in self.zombies.sprites():

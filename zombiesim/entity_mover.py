@@ -106,8 +106,8 @@ class EntityMover:
         info.update(pos)
         del self.registry[sprite]
 
-    def sprites_under(self, pos: Point):
+    def sprites_under(self, pos: Point) -> Iterable[Entity]:
         return self.sprite_finder_func(pos)
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.surface.Surface) -> None:
         self.under_mouse.draw(screen)
