@@ -56,12 +56,10 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __iter__(self) -> Iterator[T]:
         return cast(Iterator[T],super().__iter__())
 
+ENTITY_WIDTH = 10
+ENTITY_HEIGHT = 10
 
 class Entity(pygame.sprite.Sprite):
-    _mouse_groups: list[pygame.sprite.AbstractGroup]
-    rect: pygame.rect.Rect
-    image: pygame.Surface
-
     @classmethod
     def create_group(cls: Type[T], size: int, color: pygame.Color, point_getter: PointProducer) -> EntityGroup[T]:
         all_group = EntityGroup[T](cls, color)
@@ -72,19 +70,18 @@ class Entity(pygame.sprite.Sprite):
 
     def __init__(self, color: pygame.Color):
         super().__init__()
-        self.color = color
-        self.create_image()
-        self._mouse_groups = []
+        self.color: pygame.Color = color
+        self._mouse_groups: list[pygame.sprite.AbstractGroup] = []
+        self.image: pygame.Surface = self.create_image()
+        self.rect: pygame.rect.Rect = self.image.get_rect()
+        self.radius: Point = cast(Point, min(self.rect.width, self.rect.height) / 2)
+        self.draw_image(self.color) # FIXME
 
 
-    def create_image(self) -> None:
-        width = 10
-        height = 10
-        self.image = pygame.Surface([width, height], flags=pygame.SRCALPHA)
-        self.image.fill(pygame.Color(0, 0, 0, 0))
-        self.draw_image(self.color)
-        self.rect = self.image.get_rect()
-        self.radius = min(width, height) / 2
+    def create_image(self) -> pygame.Surface:
+        image = pygame.Surface([ENTITY_WIDTH, ENTITY_HEIGHT], flags=pygame.SRCALPHA)
+        image.fill(pygame.Color(0, 0, 0, 0))
+        return image   
 
     def draw_image(self, color: pygame.Color) -> None:
         pass

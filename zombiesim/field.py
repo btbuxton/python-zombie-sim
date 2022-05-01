@@ -122,13 +122,13 @@ class Field:
         new_zombie.rect.center = human.rect.center
 
     def check_and_fix_edges(self) -> None:
-        def check_and_fix(actor: pygame.sprite.Sprite, parent_rect):
+        def check_and_fix(actor: Actor, parent_rect: pygame.rect.Rect):
             if not parent_rect.contains(actor.rect):
                 actor.hit_edge(parent_rect)
-        for each in self.zombies.sprites():
-            check_and_fix(each, self.rect)
-        for each in self.humans.sprites():
-            check_and_fix(each, self.rect)
+        for each_zombie in self.zombies:
+            check_and_fix(each_zombie, self.rect)
+        for each_human in self.humans:
+            check_and_fix(each_human, self.rect)
 
     def entities_under(self, pos: Point) -> Iterable[Entity]:
         return [each for each in itertools.chain(self.humans, self.zombies, self.food)
