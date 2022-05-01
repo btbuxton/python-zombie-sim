@@ -62,12 +62,15 @@ class Field:
         print('Update: humans: {0} zombies: {1}'.format(
             len(self.humans), len(self.zombies)))
 
-    def update(self, screen)->None:
+    def update(self, screen) -> None:
         self.rect = screen.get_rect()
         self.update_humans_to_zombies()
         self.update_eaten_food()
         self.check_and_fix_edges()
         self.check_food()
+        self.restart_if_all_dead()
+
+    def restart_if_all_dead(self) -> None:
         if self.all_dead():
             self.stop()
             self.start(self.rect)
@@ -81,12 +84,12 @@ class Field:
                     human.eat_food(food)
 
     def update_humans_to_zombies(self) -> None:
-        all_dead:list[Human] = []
+        dead_list:list[Human] = []
         for zombie in self.zombies:
             dead:list[Human] = cast(list[Human], pygame.sprite.spritecollide(
                 zombie, self.humans, True, collided=pygame.sprite.collide_circle))
-            all_dead += dead
-        for human in all_dead:
+            dead_list += dead
+        for human in dead_list:
             self.turn(human)
 
     def all_dead(self) -> bool:

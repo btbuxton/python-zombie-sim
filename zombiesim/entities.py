@@ -114,7 +114,7 @@ class Entity(pygame.sprite.Sprite):
 
 
 class Actor(Entity):
-    def __init__(self, color: pygame.Color, default_speed: float = 4.0) -> None:
+    def __init__(self, color: pygame.Color, default_speed: float = 4.0):
         super().__init__(color)
         self.speed = default_speed
         self.change_dir()
@@ -214,30 +214,29 @@ class Human(Actor):
         self.reset_lifetime()
         #self.freeze = 0
 
-    def eat_food(self, food):
+    def eat_food(self, food: 'Food') -> None:
         if self.is_hungry():
             food.consume()
             self.reset_lifetime()
             self.change_dir()
 
-    def is_hungry(self):
+    def is_hungry(self) -> bool:
         return self.speed < 2.0
 
-    def is_dead(self):
+    def is_dead(self) -> bool:
         return self.speed == 0
 
-    def reset_lifetime(self):
+    def reset_lifetime(self) -> None:
         self.lifetime = zutil.xfrange(2 + (random.random() * 2), 0, -0.0005)
 
-    def alpha(self):
+    def alpha(self) -> float:
         result = self.speed / 2.0
         return min(result, 1)
 
-    def update(self, field):
+    def update(self, field) -> None: # type: ignore
         self.speed = next(self.lifetime, 0)
         if self.is_dead():
             self.kill()
-            # field.turn(self)
             return
         self.color.a = int(255 * self.alpha())
         self.draw_image(self.color)
@@ -249,7 +248,7 @@ class Human(Actor):
         self.current_dir = go_to_dir
         super().update(field)
 
-    def run_from_zombies(self, field, goto):
+    def run_from_zombies(self, field, goto: Point) -> Point:
         span = zutil.span(field.rect)
         span_mid = span / 2.0
         for zombie in field.zombies.sprites():
@@ -270,7 +269,7 @@ class Human(Actor):
                     goto_y + (factor_dist * dir_y))
         return goto
 
-    def run_to_food(self, field, goto):
+    def run_to_food(self, field, goto: Point) -> Point:
         if self.is_hungry():
             span = zutil.span(field.rect)
             span_mid = span / 2.0
@@ -288,19 +287,19 @@ class Human(Actor):
 
 
 class Consumable(Entity):
-    def __init__(self, color, amount=5):
+    def __init__(self, color: pygame.Color, amount: int=5):
         super().__init__(color)
-        self.amount = amount
+        self.amount: int = amount
 
-    def draw_image(self, color):
+    def draw_image(self, color: pygame.Color) -> None:
         pygame.draw.rect(self.image, color, self.image.get_rect())
 
-    def consume(self):
-        self.amount = self.amount - 1
+    def consume(self) -> None:
+        self.amount -= 1
         if not self.has_more():
             self.kill()
 
-    def has_more(self):
+    def has_more(self) -> bool:
         return self.amount > 0
 
 
