@@ -35,11 +35,11 @@ class Field:
     def start(self, rect: pygame.rect.Rect) -> None:
         self.rect: pygame.rect.Rect = rect
         self.zombies:EntityGroup[ZombieSprite] = ZombieSprite.create_group(
-            self.start_zombies, pygame.Color('red'), self.point_creator)
+            self.start_zombies, self.point_creator)
         self.humans:EntityGroup[HumanSprite] = HumanSprite.create_group(
-            self.start_humans, pygame.Color('pink'), self.point_creator)
+            self.start_humans, self.point_creator)
         self.food:EntityGroup[FoodSprite] = FoodSprite.create_group(
-            self.max_food, pygame.Color('green'), self.point_creator)
+            self.max_food, self.point_creator)
         self.started = time.time()
 
     def point_creator(self) -> Point:
