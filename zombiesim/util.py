@@ -63,7 +63,7 @@ def random_angle() -> float:
     return math.radians(random.randint(0, 359))
 
 
-def random_angle_change(angle: float, amount: int):
+def random_angle_change(angle: float, amount: int) -> float:
     change = math.radians(random.randint(-amount, amount))
     return angle + change
 
