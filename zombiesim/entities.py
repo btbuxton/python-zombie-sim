@@ -31,19 +31,19 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
     def closest_to(self, 
                    other: pygame.sprite.Sprite, 
                    rect: pygame.rect.Rect, 
-                   to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[pygame.sprite.Sprite], float]:
+                   to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[T], float]:
         span = zutil.span(rect)
         span_mid = span / 2.0
         curmin: float = sys.maxsize
-        curactor = None
+        curactor: Optional[T] = None
         other_rect: Optional[pygame.rect.Rect] = other.rect
         if other_rect is None:
             return (None, 0.0)
         pos = other_rect.center
-        for each in self.sprites():
+        for each in self:
             if not to_include(each):
                 continue
-            each_rect: pygame.rect.Rect = each.rect  # type: ignore
+            each_rect: pygame.rect.Rect = each.rect
             dist = zutil.distance(pos, each_rect.center)
             if dist > span_mid:
                 dist = span - dist

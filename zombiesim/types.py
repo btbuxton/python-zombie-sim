@@ -26,7 +26,7 @@ class Human(Protocol):
 
 class Food(Protocol):
     def consume(self) -> None:
-        pass
+        return
 
 class World(Protocol):
     zombies: Iterable[Zombie]
