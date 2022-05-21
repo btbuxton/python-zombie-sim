@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterator
 from typing import Any, Generator, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Food, PointProducer, Point, World
+from zombiesim.types import Bounds, Food, Part, PointProducer, Point, World
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
@@ -73,7 +73,7 @@ class Entity(pygame.sprite.Sprite):
         self._mouse_groups: list[pygame.sprite.AbstractGroup] = []
         self.image: pygame.Surface = self.create_image()
         self.rect: pygame.rect.Rect = self.image.get_rect()
-        self.radius: Point = cast(Point, min(self.rect.width, self.rect.height) / 2)
+        self.radius: float = min(self.rect.width, self.rect.height) / 2
         self.draw_image(self.color) # FIXME
 
 
@@ -94,7 +94,7 @@ class Entity(pygame.sprite.Sprite):
         for group in groups:
             group.remove(self)
             self._mouse_groups.append(group)
-        self_rect: pygame.rect.Rect = self.rect  # type: ignore
+        self_rect: pygame.rect.Rect = self.rect
         self._mouse_offset = zutil.diff_points(self_rect.center, pos)
 
     def update_pick_up(self, pos: Point) -> None:

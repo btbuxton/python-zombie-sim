@@ -90,9 +90,9 @@ class Field:
     def update_humans_to_zombies(self) -> None:
         dead_list:list[HumanSprite] = []
         for zombie in self.zombies:
-            dead:list[HumanSprite] = cast(list[HumanSprite], pygame.sprite.spritecollide(
+            died:list[HumanSprite] = cast(list[HumanSprite], pygame.sprite.spritecollide(
                 zombie, self.humans, True, collided=pygame.sprite.collide_circle))
-            dead_list += dead
+            dead_list += died
         for human in dead_list:
             self.turn(human)
 
