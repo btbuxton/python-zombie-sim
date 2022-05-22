@@ -7,7 +7,7 @@ Created on Nov 29, 2014
 import pygame
 
 from zombiesim.event import EventLookup
-from zombiesim.field import Field
+from zombiesim.field import Field, field_creator
 import zombiesim.util as zutil
 
 
@@ -44,16 +44,30 @@ def main() -> None:
     start_zombies = int(ratio * 5)
     start_humans = int(ratio * 250)
     max_food = max(1, int(ratio * 2))
-    field = Field(start_zombies=start_zombies, start_humans=start_humans, max_food=max_food)
-    field.register_events(events)
-    field.start(pygame.display.get_surface().get_rect())
+    field_factory = field_creator(start_zombies=start_zombies, start_humans=start_humans, max_food=max_food)
+    field = field_factory(pygame.display.get_surface().get_rect())
+    field.start(events)
+
+    def restart() -> None:
+        nonlocal field
+        field.stop(events)
+        field = field_factory(pygame.display.get_surface().get_rect())
+        field.start(events)
+
+    events.add_key_press(pygame.K_r, lambda _: restart())
 
     clock = pygame.time.Clock()
     try:
         while True:
             events.process_events()
             screen = pygame.display.get_surface()
-            field.update(screen)
+            should_continue = field.update(screen)
+            if not should_continue:
+                # field.stop(events)
+                # field = field_factory(screen.get_rect())
+                # field.start(events)
+                restart()
+                continue
 
             screen.fill(pygame.Color('black'))
             field.draw(screen)

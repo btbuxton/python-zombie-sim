@@ -22,7 +22,8 @@ class Zombie(Protocol):
     pass
 
 class Human(Protocol):
-    pass
+    def eat_food(self, food: 'Food') -> None:
+        pass
 
 class Food(Protocol):
     def consume(self) -> None:
