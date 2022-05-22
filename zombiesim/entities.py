@@ -1,14 +1,14 @@
-'''
+"""
 Created on Dec 7, 2014
 
 @author: bbuxton
-'''
+"""
 import random
 import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Any, Generator, Iterable, Optional, Generic, TypeVar, Type, Union, cast
+from typing import Generator, Iterable, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
 from zombiesim.types import Bounds, Food, Human, KnowsCenter, PointProducer, Point, World, Zombie
@@ -17,6 +17,7 @@ SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
 T = TypeVar('T', bound='Entity')
 C = TypeVar('C', bound=KnowsCenter)
+
 
 class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __init__(self, clazz: type[T]):
@@ -31,8 +32,10 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __iter__(self) -> Iterator[T]:
         return cast(Iterator[T],super().__iter__())
 
+
 ENTITY_WIDTH = 10
 ENTITY_HEIGHT = 10
+
 
 class Entity(pygame.sprite.Sprite):
     @classmethod

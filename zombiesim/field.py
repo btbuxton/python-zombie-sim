@@ -1,8 +1,8 @@
-'''
+"""
 Created on Dec 7, 2014
 
 @author: bbuxton
-'''
+"""
 
 from dataclasses import dataclass, field
 import itertools

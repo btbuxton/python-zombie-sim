@@ -1,8 +1,8 @@
-'''
+"""
 Created on Dec 8, 2014
 
 @author: bbuxton
-'''
+"""
 
 from typing import Iterable
 from collections.abc import Callable

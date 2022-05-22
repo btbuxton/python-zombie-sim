@@ -1,8 +1,8 @@
-'''
+"""
 Created on Nov 29, 2014
 
 @author: btbuxton
-'''
+"""
 
 import pygame
 

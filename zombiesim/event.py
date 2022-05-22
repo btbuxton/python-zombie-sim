@@ -1,8 +1,8 @@
-'''
+"""
 Created on Dec 7, 2014
 
 @author: bbuxton
-'''
+"""
 
 import pygame
 from zombiesim.types import EventCallback, Runnable
