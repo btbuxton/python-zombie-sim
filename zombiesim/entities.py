@@ -226,7 +226,7 @@ HUMAN_VISION: int = 50
 HUMAN_COLOR: pygame.Color = pygame.Color('pink')
 HUMAN_ENERGY_LEVEL: float = 4.0
 HUMAN_HUNGRY_LEVEL: float = HUMAN_ENERGY_LEVEL / 2
-RECALCULATE_ZOMBIES_SEEN: int = 10
+RECALCULATE_ZOMBIES_SEEN: int = 5
 
 class HumanSprite(Actor):
     def __init__(self):
@@ -272,7 +272,7 @@ class HumanSprite(Actor):
 
     def zombies_in_vision(self, field: World) -> Iterable[Zombie]:
         if self.zombie_calls % RECALCULATE_ZOMBIES_SEEN == 0:
-            self.known_zombies = [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) < HUMAN_VISION]
+            self.known_zombies = [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
         self.zombie_calls += 1
         return self.known_zombies
 
