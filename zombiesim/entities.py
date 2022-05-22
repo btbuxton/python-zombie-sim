@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterator
 from typing import Any, Generator, Iterable, Optional, Generic, TypeVar, Type, Union, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Food, Human, KnowsCenter, PointProducer, Point, World
+from zombiesim.types import Bounds, Food, Human, KnowsCenter, PointProducer, Point, World, Zombie
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
@@ -165,19 +165,22 @@ ZOMBIE_VISION: int = 100
 ZOMBIE_ATTACK_WAIT_MAX: int = 25
 ZOMBIE_COLOR: pygame.Color = pygame.Color('red')
 ZOMBIE_ENERGY: float = 2.0
+RECALCULATE_HUMANS_SEEN: int = 10
 
 class ZombieSprite(Actor):
     def __init__(self):
         self.angle = zutil.random_angle()
         super().__init__(ZOMBIE_COLOR, ZOMBIE_ENERGY)
         self.attack_wait = random.randint(int(ZOMBIE_ATTACK_WAIT_MAX / 2), ZOMBIE_ATTACK_WAIT_MAX)
+        self.known_humans: Iterable[Human] = []
+        self.human_calls: int = 0
 
     def update_state(self, field: World) -> None:
         if self.attack_wait > 0:
             self.attack_wait -= 1
             return
         goto = self.rect.center
-        goto = self.run_to_humans(field.humans, field.bounds, goto)
+        goto = self.run_to_humans(field, goto)
         next_point = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
         victim_angle = zutil.angle_to(self.rect.center, next_point)
         if victim_angle > self.angle:
@@ -187,23 +190,31 @@ class ZombieSprite(Actor):
         self.current_dir = zutil.angle_to_dir(self.angle)
         super().update_state(field)
 
-    def run_to_humans(self, humans: Iterable[Human], bounds: Bounds, goto: Point) -> Point:
+    def humans_in_vision(self, field: World) -> Iterable[Human]:
+        if self.human_calls % RECALCULATE_HUMANS_SEEN == 0:
+            self.known_humans = [human for human in field.humans if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
+        self.human_calls += 1
+        return self.known_humans
+
+    def run_to_humans(self, field: World, goto: Point) -> Point:
+        humans = self.humans_in_vision(field)
+        bounds = field.bounds
         victim, _ = self.closest_to(humans, bounds)
         if victim is None:
             return goto
         span = zutil.span(bounds)
         span_mid = span / 2.0
-        direc = zutil.dir_to(self.rect.center, victim.center)
-        dist = zutil.distance(self.rect.center, victim.center)
+        direc = zutil.dir_to(self.center, victim.center)
+        dist = zutil.distance(self.center, victim.center)
         if dist > span_mid:
             dist = span - dist
             direc = zutil.opposite_dir(direc)
-        if dist < ZOMBIE_VISION:
-            factor_dist = float(ZOMBIE_VISION - dist)
-            goto_x, goto_y = goto
-            dir_x, dir_y = direc
-            goto = (int(goto_x + (factor_dist * dir_x)),
-                    int(goto_y + (factor_dist * dir_y)))
+        
+        factor_dist = float(ZOMBIE_VISION - dist)
+        goto_x, goto_y = goto
+        dir_x, dir_y = direc
+        goto = (int(goto_x + (factor_dist * dir_x)),
+                int(goto_y + (factor_dist * dir_y)))
         return goto
 
     def change_dir(self) -> None:
@@ -215,11 +226,14 @@ HUMAN_VISION: int = 50
 HUMAN_COLOR: pygame.Color = pygame.Color('pink')
 HUMAN_ENERGY_LEVEL: float = 4.0
 HUMAN_HUNGRY_LEVEL: float = HUMAN_ENERGY_LEVEL / 2
+RECALCULATE_ZOMBIES_SEEN: int = 10
 
 class HumanSprite(Actor):
     def __init__(self):
         super().__init__(HUMAN_COLOR)
         self.lifetime: Generator[float, None, None] = self.new_lifetime()
+        self.known_zombies: Iterable[Zombie] = []
+        self.zombie_calls: int = 0
 
     def eat_food(self, food: Food) -> None:
         if self.is_hungry():
@@ -255,19 +269,24 @@ class HumanSprite(Actor):
         self.current_dir = go_to_dir
         super().update_state(field)
 
-    def run_from_zombies(self, field, goto: Point) -> Point:
-        span = zutil.span(field.rect)
+
+    def zombies_in_vision(self, field: World) -> Iterable[Zombie]:
+        if self.zombie_calls % RECALCULATE_ZOMBIES_SEEN == 0:
+            self.known_zombies = [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) < HUMAN_VISION]
+        self.zombie_calls += 1
+        return self.known_zombies
+
+    def run_from_zombies(self, field: World, goto: Point) -> Point:
+        span = zutil.span(field.bounds)
         span_mid = span / 2.0
-        for zombie in field.zombies.sprites():
-            dist = zutil.distance(self.rect.center, zombie.rect.center)
-            if dist >= HUMAN_VISION:
-                continue
+        for zombie in self.zombies_in_vision(field):
+            dist = zutil.distance(self.center, zombie.center)
             rev_dir = False
             if dist > span_mid:
                 dist = span - dist
                 rev_dir = True
             factor_dist = float(HUMAN_VISION - dist) ** 2
-            direc = zutil.dir_to(self.rect.center, zombie.rect.center)
+            direc = zutil.dir_to(self.rect.center, zombie.center)
             if not rev_dir:
                 direc = zutil.opposite_dir(direc)
             goto_x, goto_y = goto

@@ -63,9 +63,6 @@ def main() -> None:
             screen = pygame.display.get_surface()
             should_continue = field.update(screen)
             if not should_continue:
-                # field.stop(events)
-                # field = field_factory(screen.get_rect())
-                # field.start(events)
                 restart()
                 continue
 

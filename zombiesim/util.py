@@ -6,6 +6,7 @@ Various utility functions that don't fit into objects yet
 @author: bbuxton
 '''
 
+from functools import wraps
 import math
 import random
 import time
