@@ -18,16 +18,18 @@ class Bounds(Protocol):
     topleft: Point
     bottomright: Point
 
-class Zombie(Protocol):
+class KnowsCenter(Protocol):
+    center: Point
+
+class Zombie(KnowsCenter):
     pass
 
-class Human(Protocol):
-    def eat_food(self, food: 'Food') -> None:
-        pass
+class Human(KnowsCenter):
+    def eat_food(self, food: 'Food') -> None: ...
 
-class Food(Protocol):
-    def consume(self) -> None:
-        return
+class Food(KnowsCenter):
+    def has_more(self) -> bool: ...
+    def consume(self) -> None: ...
 
 class World(Protocol):
     zombies: Iterable[Zombie]

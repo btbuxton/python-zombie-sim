@@ -15,7 +15,7 @@ import pygame
 from zombiesim.entities import Actor, Entity, FoodSprite, HumanSprite, ZombieSprite, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
-from zombiesim.types import Human, Point, Bounds
+from zombiesim.types import Food, Human, Point, Bounds
 import zombiesim.util as zutil
 
 SEC: int = 1000
@@ -87,7 +87,7 @@ class Field:
             eaten:list[Human] = self.find_who_can_eat(food)
             for human in eaten:
                 if food.has_more():
-                    human.eat_food(food)
+                    human.eat_food(cast(Food, food))
 
     def check_and_fix_edges(self) -> None:
         def check_and_fix(actor: Actor, parent_rect: pygame.rect.Rect):

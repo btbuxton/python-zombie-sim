@@ -8,15 +8,15 @@ import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Any, Generator, Optional, Generic, TypeVar, Type, cast
+from typing import Any, Generator, Iterable, Optional, Generic, TypeVar, Type, Union, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Food, Part, PointProducer, Point, World
+from zombiesim.types import Bounds, Food, Human, KnowsCenter, PointProducer, Point, World
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
 T = TypeVar('T', bound='Entity')
-
+C = TypeVar('C', bound=KnowsCenter)
 
 class EntityGroup(pygame.sprite.Group, Generic[T]):
     def __init__(self, clazz: type[T]):
@@ -27,30 +27,6 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
         entity: T = self.entity_class()
         self.add(entity)
         return entity
-
-    def closest_to(self, 
-                   other: pygame.sprite.Sprite, 
-                   rect: pygame.rect.Rect, 
-                   to_include: SpritePredicate = lambda entity: True) -> tuple[Optional[T], float]:
-        span = zutil.span(rect)
-        span_mid = span / 2.0
-        curmin: float = sys.maxsize
-        curactor: Optional[T] = None
-        other_rect: Optional[pygame.rect.Rect] = other.rect
-        if other_rect is None:
-            return (None, 0.0)
-        pos = other_rect.center
-        for each in self:
-            if not to_include(each):
-                continue
-            each_rect: pygame.rect.Rect = each.rect
-            dist = zutil.distance(pos, each_rect.center)
-            if dist > span_mid:
-                dist = span - dist
-            if dist < curmin:
-                curmin = dist
-                curactor = each
-        return (curactor, curmin)
 
     def __iter__(self) -> Iterator[T]:
         return cast(Iterator[T],super().__iter__())
@@ -76,6 +52,9 @@ class Entity(pygame.sprite.Sprite):
         self.radius: float = min(self.rect.width, self.rect.height) / 2
         self.draw_image(self.color) # FIXME
 
+    @property
+    def center(self) -> Point:
+        return self.rect.center
 
     def create_image(self) -> pygame.Surface:
         image = pygame.Surface([ENTITY_WIDTH, ENTITY_HEIGHT], flags=pygame.SRCALPHA)
@@ -112,6 +91,29 @@ class Entity(pygame.sprite.Sprite):
         """ Let's be honest - this is to make the typing system happy"""
         self.update_state(args[0])
         super().update(*args, **kwargs)
+
+    def closest_to(self, 
+                   other: Iterable[C],
+                   bounds: Bounds, 
+                   to_include: Callable[[C], bool] = lambda _: True) -> tuple[Optional[C], float]:
+        self_rect: Optional[pygame.rect.Rect] = self.rect
+        if self_rect is None:
+            return (None, 0.0)
+        span = zutil.span(bounds)
+        span_mid = span / 2.0
+        curmin: float = sys.maxsize
+        curactor: Optional[C] = None
+        pos = self_rect.center
+        for each in other:
+            if not to_include(each):
+                continue
+            dist = zutil.distance(pos, each.center)
+            if dist > span_mid:
+                dist = span - dist
+            if dist < curmin:
+                curmin = dist
+                curactor = each
+        return (curactor, curmin)
 
     def update_state(self, field: World) -> None:
         pass
@@ -185,17 +187,14 @@ class ZombieSprite(Actor):
         self.current_dir = zutil.angle_to_dir(self.angle)
         super().update_state(field)
 
-    def run_to_humans(self, humans: Any, bounds: Bounds, goto: Point) -> Point:
-        victim, _ = humans.closest_to(self, bounds)
+    def run_to_humans(self, humans: Iterable[Human], bounds: Bounds, goto: Point) -> Point:
+        victim, _ = self.closest_to(humans, bounds)
         if victim is None:
-            return goto
-        victim_rect = victim.rect
-        if victim_rect is None:
             return goto
         span = zutil.span(bounds)
         span_mid = span / 2.0
-        direc = zutil.dir_to(self.rect.center, victim_rect.center)
-        dist = zutil.distance(self.rect.center, victim_rect.center)
+        direc = zutil.dir_to(self.rect.center, victim.center)
+        dist = zutil.distance(self.rect.center, victim.center)
         if dist > span_mid:
             dist = span - dist
             direc = zutil.opposite_dir(direc)
@@ -277,14 +276,14 @@ class HumanSprite(Actor):
                     goto_y + (factor_dist * dir_y))
         return goto
 
-    def run_to_food(self, field, goto: Point) -> Point:
+    def run_to_food(self, field: World, goto: Point) -> Point:
         if self.is_hungry():
-            span = zutil.span(field.rect)
+            span = zutil.span(field.bounds)
             span_mid = span / 2.0
-            food, _ = field.food.closest_to(self, field.rect)
+            food, _ = self.closest_to(field.food, field.bounds)
             if food is not None:
-                direc = zutil.dir_to(self.rect.center, food.rect.center)
-                dist = zutil.distance(self.rect.center, food.rect.center)
+                direc = zutil.dir_to(self.center, food.center)
+                dist = zutil.distance(self.center, food.center)
                 if dist > span_mid:
                     direc = zutil.opposite_dir(direc)
                 goto_x, goto_y = goto
