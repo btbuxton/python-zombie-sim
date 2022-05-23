@@ -10,7 +10,9 @@ from functools import wraps
 import math
 import random
 import time
-from typing import Callable
+import operator
+import weakref
+from typing import Any, Callable
 
 import pygame
 from zombiesim.types import Bounds, Point, Direction
@@ -90,3 +92,20 @@ def make_full_screen() -> None:
     if not flags & pygame.FULLSCREEN:
         pygame.display.set_mode(
             (display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
+
+
+def cache_for(times: int = 1):
+    inst_cache: dict[int, Any] = dict()
+    def decorator(method):
+        @wraps(method)
+        def wrapper(ref):
+            called, value = inst_cache.get(id(ref), (0, None))
+            if called == 0:
+                weakref.finalize(ref, operator.delitem, inst_cache, id(ref))
+            if called % times == 0:
+                value = method(ref)
+            called += 1
+            inst_cache[id(ref)] = called, value
+            return value
+        return wrapper
+    return decorator
