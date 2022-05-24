@@ -175,8 +175,6 @@ class ZombieSprite(Actor):
         self.angle = zutil.random_angle()
         super().__init__(ZOMBIE_COLOR, ZOMBIE_ENERGY)
         self.attack_wait = random.randint(int(ZOMBIE_ATTACK_WAIT_MAX / 2), ZOMBIE_ATTACK_WAIT_MAX)
-        self.known_humans: Iterable[Human] = []
-        self.human_calls: int = 0
 
     def update_state(self, field: World) -> None:
         if self.attack_wait > 0:
@@ -193,11 +191,9 @@ class ZombieSprite(Actor):
         self.current_dir = zutil.angle_to_dir(self.angle)
         super().update_state(field)
 
+    @zutil.cache_for(times=RECALCULATE_HUMANS_SEEN)
     def humans_in_vision(self, field: World) -> Iterable[Human]:
-        if self.human_calls % RECALCULATE_HUMANS_SEEN == 0:
-            self.known_humans = [human for human in field.humans if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
-        self.human_calls += 1
-        return self.known_humans
+        return [human for human in field.humans if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
 
     def run_to_humans(self, field: World, goto: Point) -> Point:
         humans = self.humans_in_vision(field)
@@ -235,8 +231,6 @@ class HumanSprite(Actor):
     def __init__(self):
         super().__init__(HUMAN_COLOR)
         self.lifetime: Generator[float, None, None] = self.new_lifetime()
-        self.known_zombies: Iterable[Zombie] = []
-        self.zombie_calls: int = 0
 
     def eat_food(self, food: Food) -> None:
         if self.is_hungry():
@@ -272,12 +266,9 @@ class HumanSprite(Actor):
         self.current_dir = go_to_dir
         super().update_state(field)
 
-
+    @zutil.cache_for(times=RECALCULATE_ZOMBIES_SEEN)
     def zombies_in_vision(self, field: World) -> Iterable[Zombie]:
-        if self.zombie_calls % RECALCULATE_ZOMBIES_SEEN == 0:
-            self.known_zombies = [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
-        self.zombie_calls += 1
-        return self.known_zombies
+        return [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
 
     def run_from_zombies(self, field: World, goto: Point) -> Point:
         span = zutil.span(field.bounds)
