@@ -23,6 +23,11 @@ MINUTE: int = 60 * SEC
 ZOMBIE_UPDATE_MS: int = 200
 HUMAN_UPDATE_MS: int = 100
 
+INITIAL_ZOMBIES: int = 5
+INITIAL_HUMANS: int = 250
+MAX_FOOD: int = 10
+
+
 def random_point(rect: pygame.rect.Rect) -> Point:
     x = random.randrange(rect.left, rect.right)
     y = random.randrange(rect.top, rect.bottom)
@@ -143,7 +148,10 @@ class Field:
                 collided=pygame.sprite.collide_circle)
         return cast(list[HumanSprite], biten)
 
-def field_creator(start_zombies: int = 5, start_humans: int = 250, max_food: int = 2) -> Callable[[pygame.rect.Rect], Field]:
+
+def field_creator(start_zombies: int = INITIAL_ZOMBIES, 
+                  start_humans: int = INITIAL_HUMANS, 
+                  max_food: int = MAX_FOOD) -> Callable[[pygame.rect.Rect], Field]:
     def creator(rect: pygame.rect.Rect) -> Field:
         point_creator = functools.partial(random_point, rect)
         zombies = ZombieSprite.create_group(start_zombies, point_creator)

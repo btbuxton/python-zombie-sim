@@ -43,7 +43,7 @@ def main() -> None:
     ratio = float(screen_width) / max_w
     start_zombies = int(ratio * 5)
     start_humans = int(ratio * 250)
-    max_food = max(1, int(ratio * 2))
+    max_food = max(1, int(ratio * 10))
     field_factory = field_creator(start_zombies=start_zombies, start_humans=start_humans, max_food=max_food)
     field = field_factory(pygame.display.get_surface().get_rect())
     field.start(events)

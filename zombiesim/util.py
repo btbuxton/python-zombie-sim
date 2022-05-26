@@ -100,12 +100,12 @@ def cache_for(times: int = 1):
         @wraps(method)
         def wrapper(ref, *args, **kargs):
             called, value = inst_cache.get(id(ref), (0, None))
-            if called == 0:
-                weakref.finalize(ref, operator.delitem, inst_cache, id(ref))
             if called % times == 0:
                 value = method(ref, *args, **kargs)
             called += 1
             inst_cache[id(ref)] = called, value
+            if called == 1:
+                weakref.finalize(ref, operator.delitem, inst_cache, id(ref))
             return value
         return wrapper
     return decorator
