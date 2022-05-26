@@ -25,7 +25,7 @@ HUMAN_UPDATE_MS: int = 100
 
 INITIAL_ZOMBIES: int = 5
 INITIAL_HUMANS: int = 250
-MAX_FOOD: int = 10
+MAX_FOOD: int = 5
 
 
 def random_point(rect: pygame.rect.Rect) -> Point:

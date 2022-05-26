@@ -12,7 +12,7 @@ import random
 import time
 import operator
 import weakref
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
 import pygame
 from zombiesim.types import Bounds, Point, Direction
@@ -94,11 +94,15 @@ def make_full_screen() -> None:
             (display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
 
 
-def cache_for(times: int = 1):
+ReturnT = TypeVar('ReturnT', bound=Any)
+CacheableFunc = Callable[..., ReturnT]
+
+
+def cache_for(times: int = 1) -> Callable[[CacheableFunc], CacheableFunc]:
     inst_cache: dict[int, Any] = dict()
-    def decorator(method):
+    def decorator(method: CacheableFunc) -> CacheableFunc:
         @wraps(method)
-        def wrapper(ref, *args, **kargs):
+        def wrapper(ref, *args, **kargs) -> ReturnT:
             called, value = inst_cache.get(id(ref), (0, None))
             if called % times == 0:
                 value = method(ref, *args, **kargs)

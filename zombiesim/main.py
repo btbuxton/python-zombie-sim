@@ -7,7 +7,7 @@ Created on Nov 29, 2014
 import pygame
 
 from zombiesim.event import EventLookup
-from zombiesim.field import Field, field_creator
+from zombiesim.field import INITIAL_HUMANS, INITIAL_ZOMBIES, MAX_FOOD, field_creator
 import zombiesim.util as zutil
 
 
@@ -41,9 +41,9 @@ def main() -> None:
 
     max_w = 1440
     ratio = float(screen_width) / max_w
-    start_zombies = int(ratio * 5)
-    start_humans = int(ratio * 250)
-    max_food = max(1, int(ratio * 10))
+    start_zombies = int(ratio * INITIAL_ZOMBIES)
+    start_humans = int(ratio * INITIAL_HUMANS)
+    max_food = max(1, int(ratio * MAX_FOOD))
     field_factory = field_creator(start_zombies=start_zombies, start_humans=start_humans, max_food=max_food)
     field = field_factory(pygame.display.get_surface().get_rect())
     field.start(events)
