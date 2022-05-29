@@ -11,9 +11,8 @@ import math
 import random
 from threading import RLock
 import time
-import operator
 import weakref
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, TypeVar
 
 import pygame
 from zombiesim.types import Bounds, Point, Direction

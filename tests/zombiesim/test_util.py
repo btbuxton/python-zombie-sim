@@ -6,7 +6,7 @@ Created on Dec 7, 2014
 
 import unittest
 
-from zombiesim.util import *
+from zombiesim.util import distance, dir_to, opposite_dir, xfrange, add_points, diff_points
 
 
 class UtilTest((unittest.TestCase)):
