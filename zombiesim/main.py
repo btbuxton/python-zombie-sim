@@ -7,7 +7,8 @@ Created on Nov 29, 2014
 import pygame
 
 from zombiesim.event import EventLookup
-from zombiesim.field import INITIAL_HUMANS, INITIAL_ZOMBIES, MAX_FOOD, field_creator
+from zombiesim.field import INITIAL_HUMANS, INITIAL_ZOMBIES, \
+                            MAX_FOOD, field_creator
 import zombiesim.util as zutil
 
 
@@ -24,16 +25,22 @@ def main() -> None:
     screen_width = display_info.current_w
     screen_height = display_info.current_h
 
-    pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF | pygame.RESIZABLE)
+    pygame.display.set_mode(
+        (screen_width, screen_height),
+        pygame.DOUBLEBUF | pygame.RESIZABLE)
     pygame.display.set_caption("Zombie Simulation")
 
     events = EventLookup()
+
     def callback(_) -> None:
         raise Done()
+
     events.add(pygame.QUIT, callback)
 
     def set_screen(event):
-        pygame.display.set_mode(event.dict['size'], pygame.DOUBLEBUF | pygame.RESIZABLE)
+        pygame.display.set_mode(
+            event.dict['size'],
+            pygame.DOUBLEBUF | pygame.RESIZABLE)
 
     events.add(pygame.VIDEORESIZE, set_screen)
     events.add_key_press(pygame.K_ESCAPE, events.func_for(pygame.QUIT))
@@ -44,7 +51,9 @@ def main() -> None:
     start_zombies = int(ratio * INITIAL_ZOMBIES)
     start_humans = int(ratio * INITIAL_HUMANS)
     max_food = max(1, int(ratio * MAX_FOOD))
-    field_factory = field_creator(start_zombies=start_zombies, start_humans=start_humans, max_food=max_food)
+    field_factory = field_creator(start_zombies=start_zombies,
+                                  start_humans=start_humans,
+                                  max_food=max_food)
     field = field_factory(pygame.display.get_surface().get_rect())
     field.start(events)
 
