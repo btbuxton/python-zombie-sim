@@ -9,10 +9,11 @@ Various utility functions that don't fit into objects yet
 from functools import wraps
 import math
 import random
+from threading import RLock
 import time
 import operator
 import weakref
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import pygame
 from zombiesim.types import Bounds, Point, Direction
@@ -99,17 +100,25 @@ CacheableFunc = Callable[..., ReturnT]
 
 
 def cache_for(times: int = 1) -> Callable[[CacheableFunc], CacheableFunc]:
+    lock: RLock = RLock()
     inst_cache: dict[int, Any] = dict()
     def decorator(method: CacheableFunc) -> CacheableFunc:
         @wraps(method)
         def wrapper(ref, *args, **kargs) -> ReturnT:
-            called, value = inst_cache.get(id(ref), (0, None))
-            if called % times == 0:
-                value = method(ref, *args, **kargs)
-            called += 1
-            inst_cache[id(ref)] = called, value
-            if called == 1:
-                weakref.finalize(ref, operator.delitem, inst_cache, id(ref))
-            return value
+            id_ref: int = id(ref)
+            with lock:
+                called: int
+                value: ReturnT
+                called, value = inst_cache.get(id_ref, (0, None))
+                if called % times == 0:
+                    value = method(ref, *args, **kargs)
+                called += 1
+                inst_cache[id_ref] = called, value
+                if called == 1:
+                    def finalizer() -> None:
+                        with lock:
+                            del inst_cache[id_ref]
+                    weakref.finalize(ref, finalizer)
+                return value
         return wrapper
     return decorator

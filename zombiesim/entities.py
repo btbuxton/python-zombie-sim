@@ -323,7 +323,7 @@ class Consumable(Entity):
         return self.amount > 0
 
 FOOD_COLOR: pygame.Color = pygame.Color('green')
-DEFAULT_FOOD_AMOUNT: int = 50
+DEFAULT_FOOD_AMOUNT: int = 25
 
 class FoodSprite(Consumable):
     def __init__(self):
