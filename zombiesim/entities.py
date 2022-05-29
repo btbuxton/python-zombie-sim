@@ -11,7 +11,8 @@ from collections.abc import Callable, Iterator
 from typing import Generator, Iterable, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Food, Human, KnowsCenter, PointProducer, Point, World, Zombie
+from zombiesim.types import Bounds, Food, Human, KnowsCenter,\
+                            PointProducer, Point, World, Zombie
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
@@ -30,7 +31,7 @@ class EntityGroup(pygame.sprite.Group, Generic[T]):
         return entity
 
     def __iter__(self) -> Iterator[T]:
-        return cast(Iterator[T],super().__iter__())
+        return cast(Iterator[T], super().__iter__())
 
 
 ENTITY_WIDTH = 10
@@ -39,7 +40,9 @@ ENTITY_HEIGHT = 10
 
 class Entity(pygame.sprite.Sprite):
     @classmethod
-    def create_group(cls: Type[T], size: int, point_getter: PointProducer) -> EntityGroup[T]:
+    def create_group(cls: Type[T],
+                     size: int,
+                     point_getter: PointProducer) -> EntityGroup[T]:
         all_group = EntityGroup[T](cls)
         for _ in range(size):
             new_entity = all_group.create_one()
@@ -53,16 +56,17 @@ class Entity(pygame.sprite.Sprite):
         self.image: pygame.Surface = self.create_image()
         self.rect: pygame.rect.Rect = self.image.get_rect()
         self.radius: float = min(self.rect.width, self.rect.height) / 2
-        self.draw_image(self.color) # FIXME
+        self.draw_image(self.color)  # FIXME
 
     @property
     def center(self) -> Point:
         return self.rect.center
 
     def create_image(self) -> pygame.Surface:
-        image = pygame.Surface([ENTITY_WIDTH, ENTITY_HEIGHT], flags=pygame.SRCALPHA)
+        image = pygame.Surface(
+            [ENTITY_WIDTH, ENTITY_HEIGHT], flags=pygame.SRCALPHA)
         image.fill(pygame.Color(0, 0, 0, 0))
-        return image   
+        return image
 
     def draw_image(self, color: pygame.Color) -> None:
         pass
@@ -95,10 +99,11 @@ class Entity(pygame.sprite.Sprite):
         self.update_state(args[0])
         super().update(*args, **kwargs)
 
-    def closest_to(self, 
+    def closest_to(self,
                    other: Iterable[C],
-                   bounds: Bounds, 
-                   to_include: Callable[[C], bool] = lambda _: True) -> tuple[Optional[C], float]:
+                   bounds: Bounds,
+                   to_include: Callable[[C], bool] = lambda _: True) \
+            -> tuple[Optional[C], float]:
         self_rect: Optional[pygame.rect.Rect] = self.rect
         if self_rect is None:
             return (None, 0.0)
@@ -120,7 +125,6 @@ class Entity(pygame.sprite.Sprite):
 
     def update_state(self, field: World) -> None:
         pass
-
 
 
 class Actor(Entity):
@@ -164,17 +168,20 @@ class Actor(Entity):
         self.update_pos(self.current_dir)
         super().update_state(field)
 
+
 ZOMBIE_VISION: int = 100
 ZOMBIE_ATTACK_WAIT_MAX: int = 25
 ZOMBIE_COLOR: pygame.Color = pygame.Color('red')
 ZOMBIE_ENERGY: float = 2.0
 RECALCULATE_HUMANS_SEEN: int = 10
 
+
 class ZombieSprite(Actor):
     def __init__(self):
         self.angle = zutil.random_angle()
         super().__init__(ZOMBIE_COLOR, ZOMBIE_ENERGY)
-        self.attack_wait = random.randint(int(ZOMBIE_ATTACK_WAIT_MAX / 2), ZOMBIE_ATTACK_WAIT_MAX)
+        self.attack_wait = random.randint(
+            int(ZOMBIE_ATTACK_WAIT_MAX / 2), ZOMBIE_ATTACK_WAIT_MAX)
 
     def update_state(self, field: World) -> None:
         if self.attack_wait > 0:
@@ -182,7 +189,8 @@ class ZombieSprite(Actor):
             return
         goto = self.rect.center
         goto = self.run_to_humans(field, goto)
-        next_point = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
+        next_point = (goto[0] + self.current_dir[0],
+                      goto[1] + self.current_dir[1])
         victim_angle = zutil.angle_to(self.rect.center, next_point)
         if victim_angle > self.angle:
             self.angle += math.radians(10)
@@ -193,7 +201,8 @@ class ZombieSprite(Actor):
 
     @zutil.cache_for(times=RECALCULATE_HUMANS_SEEN)
     def humans_in_vision(self, field: World) -> Iterable[Human]:
-        return [human for human in field.humans if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
+        return [human for human in field.humans
+                if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
 
     def run_to_humans(self, field: World, goto: Point) -> Point:
         humans = self.humans_in_vision(field)
@@ -208,7 +217,7 @@ class ZombieSprite(Actor):
         if dist > span_mid:
             dist = span - dist
             direc = zutil.opposite_dir(direc)
-        
+
         factor_dist = float(ZOMBIE_VISION - dist)
         goto_x, goto_y = goto
         dir_x, dir_y = direc
@@ -226,6 +235,7 @@ HUMAN_COLOR: pygame.Color = pygame.Color('pink')
 HUMAN_ENERGY_LEVEL: float = 4.0
 HUMAN_HUNGRY_LEVEL: float = HUMAN_ENERGY_LEVEL / 2
 RECALCULATE_ZOMBIES_SEEN: int = 5
+
 
 class HumanSprite(Actor):
     def __init__(self):
@@ -261,14 +271,16 @@ class HumanSprite(Actor):
         goto = self.rect.center
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
-        next_pos = (goto[0] + self.current_dir[0], goto[1] + self.current_dir[1])
+        next_pos = (goto[0] + self.current_dir[0],
+                    goto[1] + self.current_dir[1])
         go_to_dir = zutil.dir_to(self.rect.center, next_pos)
         self.current_dir = go_to_dir
         super().update_state(field)
 
     @zutil.cache_for(times=RECALCULATE_ZOMBIES_SEEN)
     def zombies_in_vision(self, field: World) -> Iterable[Zombie]:
-        return [zombie for zombie in field.zombies if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
+        return [zombie for zombie in field.zombies
+                if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
 
     def run_from_zombies(self, field: World, goto: Point) -> Point:
         span = zutil.span(field.bounds)
@@ -307,7 +319,7 @@ class HumanSprite(Actor):
 
 
 class Consumable(Entity):
-    def __init__(self, color: pygame.Color, amount: int=5):
+    def __init__(self, color: pygame.Color, amount: int = 5):
         super().__init__(color)
         self.amount: int = amount
 
@@ -322,8 +334,10 @@ class Consumable(Entity):
     def has_more(self) -> bool:
         return self.amount > 0
 
+
 FOOD_COLOR: pygame.Color = pygame.Color('green')
 DEFAULT_FOOD_AMOUNT: int = 25
+
 
 class FoodSprite(Consumable):
     def __init__(self):

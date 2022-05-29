@@ -14,14 +14,19 @@ class EventLookup:
         self._keys: dict[int, EventCallback] = {}
         self.next_event_id: int = pygame.USEREVENT
 
-    def add(self, event_type: int, func: EventCallback = lambda event: None) -> None:
+    def add(self,
+            event_type: int,
+            func: EventCallback = lambda event: None) -> None:
         self._mapping[event_type] = func
 
     def remove(self, event_type: int) -> None:
         pygame.time.set_timer(event_type, 0)
         del self._mapping[event_type]
 
-    def add_key_press(self, key, func: EventCallback = lambda event: None) -> None:
+    def add_key_press(self,
+                      key,
+                      func: EventCallback = lambda event: None) \
+            -> None:
         def key_func(event: pygame.event.Event) -> None:
             evt_key = event.key
             self._keys.get(evt_key, lambda event: None)(event)

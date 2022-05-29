@@ -19,11 +19,12 @@ from zombiesim.types import Bounds, Point, Direction
 from collections.abc import Generator
 
 
-def str_diff_time(begin: float, time_func:Callable[[], float]=time.time) -> str:
+def str_diff_time(begin: float,
+                  time_func: Callable[[], float] = time.time) -> str:
     end = int(round(time_func() - begin))
     rest, seconds = divmod(end, 60)
     hours, minutes = divmod(rest, 60)
-    return '{0} hours, {1} minutes, {2} seconds'.format(hours, minutes, seconds)
+    return f'{hours} hours, {minutes} minutes, {seconds} seconds'
 
 
 def distance(origin: Point, dest: Point) -> float:
@@ -71,7 +72,9 @@ def random_angle_change(angle: float, amount: int) -> float:
     return angle + change
 
 
-def xfrange(start: float, stop: float, step: float) -> Generator[float, None, None]:
+def xfrange(start: float,
+            stop: float,
+            step: float) -> Generator[float, None, None]:
     current = start
     while ((step > 0 and current < stop) or (step < 0 and current > stop)):
         yield current
@@ -91,7 +94,8 @@ def make_full_screen() -> None:
     flags = pygame.display.get_surface().get_flags()
     if not flags & pygame.FULLSCREEN:
         pygame.display.set_mode(
-            (display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN)
+            (display_info.current_w, display_info.current_h),
+            flags | pygame.FULLSCREEN)
 
 
 ReturnT = TypeVar('ReturnT', bound=Any)
@@ -101,6 +105,7 @@ CacheableFunc = Callable[..., ReturnT]
 def cache_for(times: int = 1) -> Callable[[CacheableFunc], CacheableFunc]:
     lock: RLock = RLock()
     inst_cache: dict[int, Any] = dict()
+
     def decorator(method: CacheableFunc) -> CacheableFunc:
         @wraps(method)
         def wrapper(ref, *args, **kargs) -> ReturnT:

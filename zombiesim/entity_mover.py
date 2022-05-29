@@ -19,7 +19,10 @@ SpriteFinder = Callable[[Point], Iterable[Entity]]
 
 class EntityMover:
     class Pickup:
-        def __init__(self, sprite: Entity, pos: Point, on_pos_change: EntityCallback):
+        def __init__(self,
+                     sprite: Entity,
+                     pos: Point,
+                     on_pos_change: EntityCallback):
             self.sprite: Entity = sprite
             self.groups = tuple(sprite.groups())
             center: Point = sprite.rect.center  # type: ignore
