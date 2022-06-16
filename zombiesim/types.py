@@ -61,6 +61,8 @@ class Direction:
 
     def normalize(self) -> 'Direction':
         dist = sqrt(self.x ** 2 + self.y ** 2)
+        if dist == 0:
+            return self
         return Direction(self.x / dist, self.y / dist)
 
     def to_angle(self) -> float:
