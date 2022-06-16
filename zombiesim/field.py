@@ -32,7 +32,7 @@ MAX_FOOD: int = 5
 def random_point(rect: pygame.rect.Rect) -> Point:
     x = random.randrange(rect.left, rect.right)
     y = random.randrange(rect.top, rect.bottom)
-    return (x, y)
+    return Point(x, y)
 
 
 @dataclass
@@ -117,7 +117,8 @@ class Field:
             num_under_mouse = len(self.mover.under_mouse)
         while (len(self.food) + num_under_mouse) < self.max_food:
             new_food = self.food.create_one()
-            new_food.rect.center = random_point(self.rect)
+            center = random_point(self.rect)
+            new_food.rect.center = int(center.x), int(center.y)
 
     def all_dead(self) -> bool:
         no_humans = not self.humans

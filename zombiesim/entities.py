@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterator
 from typing import Generator, Iterable, Optional, Generic, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Food, Human, KnowsCenter,\
+from zombiesim.types import Bounds, Direction, Food, Human, KnowsCenter,\
                             PointProducer, Point, World, Zombie
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
@@ -46,7 +46,8 @@ class Entity(pygame.sprite.Sprite):
         all_group = EntityGroup[T](cls)
         for _ in range(size):
             new_entity = all_group.create_one()
-            new_entity.rect.center = point_getter()
+            center = point_getter()
+            new_entity.rect.center = int(center.x), int(center.y)
         return all_group
 
     def __init__(self, color: pygame.Color = pygame.Color('black')):
@@ -60,7 +61,7 @@ class Entity(pygame.sprite.Sprite):
 
     @property
     def center(self) -> Point:
-        return self.rect.center
+        return Point(*self.rect.center)
 
     def create_image(self) -> pygame.Surface:
         image = pygame.Surface(
@@ -81,10 +82,11 @@ class Entity(pygame.sprite.Sprite):
             group.remove(self)
             self._mouse_groups.append(group)
         self_rect: pygame.rect.Rect = self.rect
-        self._mouse_offset = zutil.diff_points(self_rect.center, pos)
+        self._mouse_offset = zutil.diff_points(Point(*self_rect.center), pos)
 
     def update_pick_up(self, pos: Point) -> None:
-        self.rect.center = zutil.add_points(pos, self._mouse_offset)
+        new_point = zutil.add_points(pos, self._mouse_offset)
+        self.rect.center = int(new_point.x), int(new_point.y)
         self.reset_pos()
 
     def put_down(self, pos: Point):
@@ -111,7 +113,7 @@ class Entity(pygame.sprite.Sprite):
         span_mid = span / 2.0
         curmin: float = sys.maxsize
         curactor: Optional[C] = None
-        pos = self_rect.center
+        pos = Point(*self_rect.center)
         for each in other:
             if not to_include(each):
                 continue
@@ -144,10 +146,9 @@ class Actor(Entity):
     def draw_image(self, color: pygame.Color) -> None:
         pygame.draw.ellipse(self.image, color, self.image.get_rect())
 
-    def update_pos(self, direc: tuple[float, float]) -> None:
-        dirx, diry = direc
-        new_x = self.x + (dirx * self.energy)
-        new_y = self.y + (diry * self.energy)
+    def update_pos(self, direc: Direction) -> None:
+        new_x = self.x + (direc.x * self.energy)
+        new_y = self.y + (direc.y * self.energy)
         self.rect.x = int(round(new_x))
         self.rect.y = int(round(new_y))
 
@@ -187,16 +188,17 @@ class ZombieSprite(Actor):
         if self.attack_wait > 0:
             self.attack_wait -= 1
             return
-        goto = self.rect.center
+        goto = Point(*self.rect.center)
         goto = self.run_to_humans(field, goto)
-        next_point = (goto[0] + self.current_dir[0],
-                      goto[1] + self.current_dir[1])
-        victim_angle = zutil.angle_to(self.rect.center, next_point)
+        next_point = Point(goto.x + self.current_dir.x,
+                      goto.y + self.current_dir.y)
+        # TODO Revisit
+        victim_angle = Direction.from_points(Point(*self.rect.center), next_point).to_angle()
         if victim_angle > self.angle:
             self.angle += math.radians(10)
         elif victim_angle < self.angle:
             self.angle -= math.radians(10)
-        self.current_dir = zutil.angle_to_dir(self.angle)
+        self.current_dir = Direction.from_angle(self.angle)
         super().update_state(field)
 
     @zutil.cache_for(times=RECALCULATE_HUMANS_SEEN)
@@ -212,22 +214,20 @@ class ZombieSprite(Actor):
             return goto
         span = zutil.span(bounds)
         span_mid = span / 2.0
-        direc = zutil.dir_to(self.center, victim.center)
+        direc = Direction.from_points(self.center, victim.center)
         dist = zutil.distance(self.center, victim.center)
         if dist > span_mid:
             dist = span - dist
-            direc = zutil.opposite_dir(direc)
+            direc = direc.reverse()
 
         factor_dist = float(ZOMBIE_VISION - dist)
-        goto_x, goto_y = goto
-        dir_x, dir_y = direc
-        goto = (int(goto_x + (factor_dist * dir_x)),
-                int(goto_y + (factor_dist * dir_y)))
+        goto = Point(int(goto.x + (factor_dist * direc.x)),
+                int(goto.y + (factor_dist * direc.y)))
         return goto
 
     def change_dir(self) -> None:
         self.angle = zutil.random_angle_change(self.angle, 10)
-        self.current_dir = zutil.angle_to_dir(self.angle)
+        self.current_dir = Direction.from_angle(self.angle)
 
 
 HUMAN_VISION: int = 50
@@ -268,12 +268,12 @@ class HumanSprite(Actor):
             return
         self.color.a = int(255 * self.alpha())
         self.draw_image(self.color)
-        goto = self.rect.center
+        goto = Point(*self.rect.center)
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
-        next_pos = (goto[0] + self.current_dir[0],
-                    goto[1] + self.current_dir[1])
-        go_to_dir = zutil.dir_to(self.rect.center, next_pos)
+        next_pos = Point(goto.x + self.current_dir.x,
+                    goto.y + self.current_dir.y)
+        go_to_dir = Direction.from_points(Point(*self.rect.center), next_pos)
         self.current_dir = go_to_dir
         super().update_state(field)
 
@@ -292,13 +292,11 @@ class HumanSprite(Actor):
                 dist = span - dist
                 rev_dir = True
             factor_dist = float(HUMAN_VISION - dist) ** 2
-            direc = zutil.dir_to(self.rect.center, zombie.center)
+            direc = Direction.from_points(self.center, zombie.center)
             if not rev_dir:
-                direc = zutil.opposite_dir(direc)
-            goto_x, goto_y = goto
-            dir_x, dir_y = direc
-            goto = (goto_x + (factor_dist * dir_x),
-                    goto_y + (factor_dist * dir_y))
+                direc = direc.reverse()
+            goto = Point(goto.x + (factor_dist * direc.x),
+                    goto.y + (factor_dist * direc.y))
         return goto
 
     def run_to_food(self, field: World, goto: Point) -> Point:
@@ -307,14 +305,13 @@ class HumanSprite(Actor):
             span_mid = span / 2.0
             food, _ = self.closest_to(field.food, field.bounds)
             if food is not None:
-                direc = zutil.dir_to(self.center, food.center)
+                direc = Direction.from_points(self.center, food.center)
                 dist = zutil.distance(self.center, food.center)
                 if dist > span_mid:
-                    direc = zutil.opposite_dir(direc)
+                    direc = direc.reverse()
                 goto_x, goto_y = goto
-                dir_x, dir_y = direc
                 factor = (float(self.energy) / 4 * HUMAN_VISION) ** 2
-                goto = (goto_x + (factor * dir_x), goto_y + (factor * dir_y))
+                goto = Point(goto_x + (factor * direc.x), goto_y + (factor * direc.y))
         return goto
 
 

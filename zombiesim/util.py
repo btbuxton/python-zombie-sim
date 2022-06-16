@@ -34,33 +34,11 @@ def distance(origin: Point, dest: Point) -> float:
 
 
 def span(rect: Bounds) -> float:
-    return distance(rect.topleft, rect.bottomright)
-
-
-def dir_to(origin: Point, dest: Point) -> Direction:
-    angle = angle_to(origin, dest)
-    return angle_to_dir(angle)
-
-
-def angle_to_dir(angle: float) -> Direction:
-    return (math.cos(angle), math.sin(angle))
-
-
-def angle_to(origin: Point, dest: Point) -> float:
-    originx, originy = origin
-    destx, desty = dest
-    diffx, diffy = destx - originx, desty - originy
-    return math.atan2(diffy, diffx)
-
-
-def opposite_dir(direc: Direction) -> Direction:
-    negative_one = float(-1)
-    return tuple([x * negative_one for x in direc])  # type: ignore
+    return distance(Point(*rect.topleft), Point(*rect.bottomright))
 
 
 def random_direction() -> Direction:
-    angle = random_angle()
-    return angle_to_dir(angle)
+    return Direction.from_angle(random_angle())
 
 
 def random_angle() -> float:
@@ -82,11 +60,11 @@ def xfrange(start: float,
 
 
 def diff_points(a: Point, b: Point) -> Point:
-    return (a[0] - b[0], a[1] - b[1])
+    return Point(a[0] - b[0], a[1] - b[1])
 
 
 def add_points(a: Point, b: Point) -> Point:
-    return (a[0] + b[0], a[1] + b[1])
+    return Point(a.x + b.x, a.y + b.y)
 
 
 def make_full_screen() -> None:
