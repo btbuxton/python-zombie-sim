@@ -56,7 +56,6 @@ class Entity(pygame.sprite.Sprite):
         self._mouse_groups: list[pygame.sprite.AbstractGroup] = []
         self.image: pygame.Surface = self.create_image()
         self.rect: pygame.rect.Rect = self.image.get_rect()
-        self.radius: float = min(self.rect.width, self.rect.height) / 2
         self.draw_image(self.color)  # FIXME
 
     @property
@@ -228,7 +227,7 @@ class ZombieSprite(Actor):
         return goto
 
     def change_dir(self) -> None:
-        self.angle = zutil.random_angle_change(self.angle, 10)
+        self.angle = zutil.random_angle_change(self.angle, 45)
         self.current_dir = Direction.from_angle(self.angle)
 
 
@@ -270,12 +269,12 @@ class HumanSprite(Actor):
             return
         self.color.a = int(255 * self.alpha())
         self.draw_image(self.color)
-        goto = self.position
-        goto = self.run_from_zombies(field, goto)
+        pos = self.position
+        goto = self.run_from_zombies(field, pos)
         goto = self.run_to_food(field, goto)
         next_pos = Point(goto.x + self.current_dir.x,
                     goto.y + self.current_dir.y)
-        go_to_dir = Direction.from_points(self.position, next_pos)
+        go_to_dir = Direction.from_points(pos, next_pos)
         self.current_dir = go_to_dir
         super().update_state(field)
 
