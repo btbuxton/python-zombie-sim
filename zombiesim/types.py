@@ -3,7 +3,7 @@ Basic types used for optional type checking (mypy)
 """
 from dataclasses import dataclass
 import pygame
-from math import atan2, sin, cos, sqrt
+from math import atan2, radians, sin, cos, sqrt
 from collections.abc import Callable, Iterable
 from typing import NamedTuple, Protocol, Tuple
 
@@ -62,8 +62,8 @@ class Direction:
     y: float
 
     @classmethod
-    def from_angle(cls, angle: float) -> 'Direction':
-        return cls(cos(angle), sin(angle))
+    def from_angle(cls, angle_radians: float) -> 'Direction':
+        return cls(cos(angle_radians), sin(angle_radians))
 
     @classmethod
     def from_points(cls, src: Point, dest: Point) -> 'Direction':
@@ -75,6 +75,10 @@ class Direction:
         if dist == 0:
             return self
         return Direction(self.x / dist, self.y / dist)
+
+    def add_angle(self, angle_degrees: float):
+        angle_radians = radians(angle_degrees)
+        return self.__class__(self.x + cos(angle_radians), self.y + sin(angle_radians)).normalize()
 
     def to_angle(self) -> float:
         return atan2(self.y, self.x)

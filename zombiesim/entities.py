@@ -191,41 +191,40 @@ class ZombieSprite(Actor):
         if self.attack_wait > 0:
             self.attack_wait -= 1
             return
-        goto = Point(*self.rect.center)
-        goto = self.run_to_humans(field, goto)
-        next_point = Point(goto.x + self.current_dir.x,
-                      goto.y + self.current_dir.y)
+        current_pos = self.position
+        goto = self.run_to_humans(field, current_pos)
+        next_point = Point(goto.x + self.current_dir.x, goto.y + self.current_dir.y)
         # TODO Revisit
-        victim_angle = Direction.from_points(Point(*self.rect.center), next_point).to_angle()
+        victim_angle = Direction.from_points(current_pos, next_point).to_angle()
         if victim_angle > self.angle:
-            self.angle += math.radians(10)
+            self.angle += math.radians(random.random() * 45)
         elif victim_angle < self.angle:
-            self.angle -= math.radians(10)
+            self.angle -= math.radians(random.random() * 45)
         self.current_dir = Direction.from_angle(self.angle)
         super().update_state(field)
 
     @zutil.cache_for(times=RECALCULATE_HUMANS_SEEN)
     def humans_in_vision(self, field: World) -> Iterable[Human]:
         return [human for human in field.humans
-                if self.position.distance(human.position) < ZOMBIE_VISION]
+                if self.position.distance(human.position) <= ZOMBIE_VISION]
 
-    def run_to_humans(self, field: World, goto: Point) -> Point:
+    def run_to_humans(self, field: World, start: Point) -> Point:
         humans = self.humans_in_vision(field)
         bounds = field.bounds
         victim, _ = self.closest_to(humans, bounds)
         if victim is None:
-            return goto
+            return start
         span = zutil.span(bounds)
         span_mid = span / 2.0
-        direc = Direction.from_points(self.position, victim.position)
+        direc = Direction.from_points(start, victim.position)
         dist = self.position.distance(victim.position)
         if dist > span_mid:
             dist = span - dist
             direc = -direc
 
         factor_dist = float(ZOMBIE_VISION - dist)
-        goto = Point(int(goto.x + (factor_dist * direc.x)),
-                int(goto.y + (factor_dist * direc.y)))
+        goto = Point(int(start.x + (factor_dist * direc.x)),
+                int(start.y + (factor_dist * direc.y)))
         return goto
 
     def change_dir(self) -> None:
@@ -271,12 +270,12 @@ class HumanSprite(Actor):
             return
         self.color.a = int(255 * self.alpha())
         self.draw_image(self.color)
-        goto = Point(*self.rect.center)
+        goto = self.position
         goto = self.run_from_zombies(field, goto)
         goto = self.run_to_food(field, goto)
         next_pos = Point(goto.x + self.current_dir.x,
                     goto.y + self.current_dir.y)
-        go_to_dir = Direction.from_points(Point(*self.rect.center), next_pos)
+        go_to_dir = Direction.from_points(self.position, next_pos)
         self.current_dir = go_to_dir
         super().update_state(field)
 
