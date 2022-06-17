@@ -141,7 +141,7 @@ class Field:
         return [each for each in itertools.chain(self.humans,
                                                  self.zombies,
                                                  self.food)
-                if each.rect.collidepoint(pos)]
+                if each.rect.collidepoint(pos.x, pos.y)]
 
     def find_who_can_eat(self, food: FoodSprite) -> list[Human]:
         humans = pygame.sprite.spritecollide(

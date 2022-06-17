@@ -10,9 +10,20 @@ from typing import NamedTuple, Protocol, Tuple
 EventCallback = Callable[[pygame.event.Event], None]
 Runnable = Callable[[], None]
 
-class Point(NamedTuple):
+@dataclass(frozen=True)
+class Point:
     x: float
     y: float
+
+    def distance(self, dest: 'Point') -> float:
+        return sqrt(((self.x - dest.x) ** 2) + ((self.y - dest.y) ** 2))
+
+    def __add__(self, another: 'Point') -> 'Point':
+        return self.__class__(self.x + another.x, self.y + another.y)
+
+    def __sub__(self, another: 'Point') -> 'Point':
+        return self.__class__(self.x - another.x, self.y - another.y)
+
 
 PointProducer = Callable[[], Point]
 
@@ -22,19 +33,19 @@ class Bounds(Protocol):
     bottomright: Tuple[int, int]
 
 
-class KnowsCenter(Protocol):
-    center: Point
+class HasPosition(Protocol):
+    position: Point
 
 
-class Zombie(KnowsCenter):
+class Zombie(HasPosition):
     pass
 
 
-class Human(KnowsCenter):
+class Human(HasPosition):
     def eat_food(self, food: 'Food') -> None: ...
 
 
-class Food(KnowsCenter):
+class Food(HasPosition):
     def has_more(self) -> bool: ...
     def consume(self) -> None: ...
 
@@ -68,6 +79,6 @@ class Direction:
     def to_angle(self) -> float:
         return atan2(self.y, self.x)
 
-    def reverse(self) -> 'Direction':
+    def __neg__(self) -> 'Direction':
         negative_one = float(-1)
         return self.__class__(self.x * negative_one, self.y * negative_one)

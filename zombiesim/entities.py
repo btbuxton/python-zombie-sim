@@ -8,16 +8,16 @@ import sys
 import pygame
 import math
 from collections.abc import Callable, Iterator
-from typing import Generator, Iterable, Optional, Generic, TypeVar, Type, cast
+from typing import Generator, Iterable, Optional, Generic, Tuple, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Direction, Food, Human, KnowsCenter,\
+from zombiesim.types import Bounds, Direction, Food, Human, HasPosition,\
                             PointProducer, Point, World, Zombie
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]
 EntityCallback = Callable[['Entity'], None]
 T = TypeVar('T', bound='Entity')
-C = TypeVar('C', bound=KnowsCenter)
+C = TypeVar('C', bound=HasPosition)
 
 
 class EntityGroup(pygame.sprite.Group, Generic[T]):
@@ -46,8 +46,8 @@ class Entity(pygame.sprite.Sprite):
         all_group = EntityGroup[T](cls)
         for _ in range(size):
             new_entity = all_group.create_one()
-            center = point_getter()
-            new_entity.rect.center = int(center.x), int(center.y)
+            pos = point_getter()
+            new_entity.rect.center = int(pos.x), int(pos.y)
         return all_group
 
     def __init__(self, color: pygame.Color = pygame.Color('black')):
@@ -60,8 +60,12 @@ class Entity(pygame.sprite.Sprite):
         self.draw_image(self.color)  # FIXME
 
     @property
-    def center(self) -> Point:
-        return Point(*self.rect.center)
+    def center(self) -> Tuple[int,int]:
+        return self.rect.center
+
+    @property
+    def position(self) -> Point:
+        return Point(*self.center)
 
     def create_image(self) -> pygame.Surface:
         image = pygame.Surface(
@@ -81,11 +85,10 @@ class Entity(pygame.sprite.Sprite):
         for group in groups:
             group.remove(self)
             self._mouse_groups.append(group)
-        self_rect: pygame.rect.Rect = self.rect
-        self._mouse_offset = zutil.diff_points(Point(*self_rect.center), pos)
+        self._mouse_offset = self.position - pos
 
     def update_pick_up(self, pos: Point) -> None:
-        new_point = zutil.add_points(pos, self._mouse_offset)
+        new_point = pos + self._mouse_offset
         self.rect.center = int(new_point.x), int(new_point.y)
         self.reset_pos()
 
@@ -113,11 +116,11 @@ class Entity(pygame.sprite.Sprite):
         span_mid = span / 2.0
         curmin: float = sys.maxsize
         curactor: Optional[C] = None
-        pos = Point(*self_rect.center)
+        pos = self.position
         for each in other:
             if not to_include(each):
                 continue
-            dist = zutil.distance(pos, each.center)
+            dist = pos.distance(each.position)
             if dist > span_mid:
                 dist = span - dist
             if dist < curmin:
@@ -204,7 +207,7 @@ class ZombieSprite(Actor):
     @zutil.cache_for(times=RECALCULATE_HUMANS_SEEN)
     def humans_in_vision(self, field: World) -> Iterable[Human]:
         return [human for human in field.humans
-                if zutil.distance(self.center, human.center) < ZOMBIE_VISION]
+                if self.position.distance(human.position) < ZOMBIE_VISION]
 
     def run_to_humans(self, field: World, goto: Point) -> Point:
         humans = self.humans_in_vision(field)
@@ -214,11 +217,11 @@ class ZombieSprite(Actor):
             return goto
         span = zutil.span(bounds)
         span_mid = span / 2.0
-        direc = Direction.from_points(self.center, victim.center)
-        dist = zutil.distance(self.center, victim.center)
+        direc = Direction.from_points(self.position, victim.position)
+        dist = self.position.distance(victim.position)
         if dist > span_mid:
             dist = span - dist
-            direc = direc.reverse()
+            direc = -direc
 
         factor_dist = float(ZOMBIE_VISION - dist)
         goto = Point(int(goto.x + (factor_dist * direc.x)),
@@ -280,21 +283,21 @@ class HumanSprite(Actor):
     @zutil.cache_for(times=RECALCULATE_ZOMBIES_SEEN)
     def zombies_in_vision(self, field: World) -> Iterable[Zombie]:
         return [zombie for zombie in field.zombies
-                if zutil.distance(self.center, zombie.center) <= HUMAN_VISION]
+                if self.position.distance(zombie.position) <= HUMAN_VISION]
 
     def run_from_zombies(self, field: World, goto: Point) -> Point:
         span = zutil.span(field.bounds)
         span_mid = span / 2.0
         for zombie in self.zombies_in_vision(field):
-            dist = zutil.distance(self.center, zombie.center)
+            dist = self.position.distance(zombie.position)
             rev_dir = False
             if dist > span_mid:
                 dist = span - dist
                 rev_dir = True
             factor_dist = float(HUMAN_VISION - dist) ** 2
-            direc = Direction.from_points(self.center, zombie.center)
+            direc = Direction.from_points(self.position, zombie.position)
             if not rev_dir:
-                direc = direc.reverse()
+                direc = -direc
             goto = Point(goto.x + (factor_dist * direc.x),
                     goto.y + (factor_dist * direc.y))
         return goto
@@ -305,13 +308,12 @@ class HumanSprite(Actor):
             span_mid = span / 2.0
             food, _ = self.closest_to(field.food, field.bounds)
             if food is not None:
-                direc = Direction.from_points(self.center, food.center)
-                dist = zutil.distance(self.center, food.center)
+                direc = Direction.from_points(self.position, food.position)
+                dist = self.position.distance(food.position)
                 if dist > span_mid:
-                    direc = direc.reverse()
-                goto_x, goto_y = goto
+                    direc = -direc
                 factor = (float(self.energy) / 4 * HUMAN_VISION) ** 2
-                goto = Point(goto_x + (factor * direc.x), goto_y + (factor * direc.y))
+                goto = Point(goto.x + (factor * direc.x), goto.y + (factor * direc.y))
         return goto
 
 

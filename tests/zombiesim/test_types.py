@@ -10,6 +10,19 @@ class DirectionTest(TestCase):
         self.assertEqual(round(0.7, 1), round(result.y, 1))
 
     def test_reverse(self):
-        result = Direction(1, -1).reverse()
+        result = -Direction(1, -1)
         self.assertEqual(-1, result.x)
         self.assertEqual(1, result.y)
+
+class PointTest(TestCase):
+    def test_distance(self):
+        self.assertEqual(3, Point(0, 0).distance(Point(3, 0)))
+        self.assertEqual(2, Point(1, 1).distance(Point(1, 3)))
+
+    def test_add_points(self):
+        result = Point(1, 1) + Point(3, 4)
+        self.assertEqual(Point(4, 5), result)
+
+    def test_diff_points(self):
+        result = Point(1, 1) - Point(3, 4)
+        self.assertEqual(Point(-2, -3), result)

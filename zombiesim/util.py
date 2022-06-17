@@ -27,14 +27,8 @@ def str_diff_time(begin: float,
     return f'{hours} hours, {minutes} minutes, {seconds} seconds'
 
 
-def distance(origin: Point, dest: Point) -> float:
-    originx, originy = origin
-    destx, desty = dest
-    return math.sqrt(((originy - desty) ** 2) + ((originx - destx) ** 2))
-
-
 def span(rect: Bounds) -> float:
-    return distance(Point(*rect.topleft), Point(*rect.bottomright))
+    return Point(*rect.topleft).distance(Point(*rect.bottomright))
 
 
 def random_direction() -> Direction:
@@ -57,14 +51,6 @@ def xfrange(start: float,
     while ((step > 0 and current < stop) or (step < 0 and current > stop)):
         yield current
         current = current + step
-
-
-def diff_points(a: Point, b: Point) -> Point:
-    return Point(a[0] - b[0], a[1] - b[1])
-
-
-def add_points(a: Point, b: Point) -> Point:
-    return Point(a.x + b.x, a.y + b.y)
 
 
 def make_full_screen() -> None:

@@ -9,7 +9,6 @@ from collections.abc import Callable
 
 import pygame
 from zombiesim.event import EventLookup
-import zombiesim.util as zutil
 from zombiesim.types import Point, EventCallback
 from zombiesim.entities import Entity, EntityCallback
 
@@ -25,8 +24,8 @@ class EntityMover:
                      on_pos_change: EntityCallback):
             self.sprite: Entity = sprite
             self.groups = tuple(sprite.groups())
-            center: Point = sprite.rect.center  # type: ignore
-            self.offset: Point = zutil.diff_points(center, pos)
+            center: Point = Point(*sprite.rect.center)
+            self.offset: Point = center - pos
             self.on_pos_change: EntityCallback = on_pos_change
 
         def up(self) -> None:
@@ -39,8 +38,8 @@ class EntityMover:
                 each.add(self.sprite)
 
         def update(self, pos: Point):
-            new_center: Point = zutil.add_points(pos, self.offset)
-            self.sprite.rect.center = new_center  # type: ignore
+            new_center: Point = pos + self.offset
+            self.sprite.rect.center = int(new_center.x), int(new_center.y)
             self.on_pos_change(self.sprite)
 
     def __init__(self,
@@ -64,32 +63,32 @@ class EntityMover:
     def mouse_down(self, event: pygame.event.Event) -> None:
         if event.button != 1:
             return
-        pos = event.pos
+        pos = Point(*event.pos)
         sprites = self.sprites_under(pos)
         for each in sprites:
             self.pick_up(each, pos)
 
-        def on_up(pos, sprites=sprites):
+        def on_up(pos: Point, sprites=sprites):
             for each in sprites:
                 self.put_down(each, pos)
-        self.on_mouse_up = on_up
+        self.on_mouse_up = on_up # type: ignore
 
-        def on_move(pos, sprites=sprites):
+        def on_move(pos:Point, sprites=sprites):
             for each in sprites:
                 self.update_pick_up(each, pos)
-        self.on_mouse_move = on_move
+        self.on_mouse_move = on_move # type: ignore
 
     def mouse_move(self, event: pygame.event.Event) -> None:
         if not event.buttons[0]:
             return
-        pos = event.pos
-        self.on_mouse_move(pos)
+        pos = Point(*event.pos)
+        self.on_mouse_move(pos) # type: ignore
 
     def mouse_up(self, event: pygame.event.Event) -> None:
         if event.button != 1:
             return
-        pos = event.pos
-        self.on_mouse_up(pos)
+        pos = Point(*event.pos)
+        self.on_mouse_up(pos) # type: ignore
         self.on_mouse_up = lambda pos: None
         self.on_mouse_move = lambda pos: None
 
