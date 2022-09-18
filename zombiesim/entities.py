@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterator
 from typing import Generator, Iterable, Optional, Generic, Tuple, TypeVar, Type, cast
 
 import zombiesim.util as zutil
-from zombiesim.types import Bounds, Direction, Food, Human, HasPosition,\
+from zombiesim.type_def import Bounds, Direction, Food, Human, HasPosition,\
                             PointProducer, Point, World, Zombie
 
 SpritePredicate = Callable[[pygame.sprite.Sprite], bool]

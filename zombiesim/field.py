@@ -16,7 +16,7 @@ from zombiesim.entities import Actor, Entity, FoodSprite, \
     HumanSprite, ZombieSprite, EntityGroup
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
-from zombiesim.types import Food, Human, Point, Bounds
+from zombiesim.type_def import Food, Human, Point, Bounds
 import zombiesim.util as zutil
 
 SEC: int = 1000

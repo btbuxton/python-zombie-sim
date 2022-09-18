@@ -5,7 +5,7 @@ Created on Dec 7, 2014
 """
 
 import pygame
-from zombiesim.types import EventCallback, Runnable
+from zombiesim.type_def import EventCallback, Runnable
 
 
 class EventLookup:
