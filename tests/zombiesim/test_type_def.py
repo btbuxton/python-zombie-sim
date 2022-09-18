@@ -1,5 +1,5 @@
 from unittest import TestCase
-from zombiesim.types import Direction, Point
+from zombiesim.type_def import Direction, Point
 
 
 class DirectionTest(TestCase):
