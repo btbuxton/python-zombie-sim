@@ -9,3 +9,4 @@ zombie_sim.egg-info/
 build
 .venv
 dist
+.env
