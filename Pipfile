@@ -3,12 +3,13 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+# $ pipenv update --outdated --dev
 [packages]
-pygame = "==2.1.0"
+pygame = "==2.5.2"
 
 [dev-packages]
-mypy = "*"
-pytest = "*"
+mypy = "==1.9.0"
+pytest = "==8.1.1"
 black = "*"
 pylint = "*"
 
