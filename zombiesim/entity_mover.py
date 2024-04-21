@@ -18,10 +18,7 @@ SpriteFinder = Callable[[Point], Iterable[Entity]]
 
 class EntityMover:
     class Pickup:
-        def __init__(self,
-                     sprite: Entity,
-                     pos: Point,
-                     on_pos_change: EntityCallback):
+        def __init__(self, sprite: Entity, pos: Point, on_pos_change: EntityCallback):
             self.sprite: Entity = sprite
             self.groups = tuple(sprite.groups())
             center: Point = Point(*sprite.rect.center)
@@ -42,10 +39,12 @@ class EntityMover:
             self.sprite.rect.center = int(new_center.x), int(new_center.y)
             self.on_pos_change(self.sprite)
 
-    def __init__(self,
-                 event_lookup: EventLookup,
-                 sprite_finder_func: SpriteFinder,
-                 on_sprite_change: EntityCallback = lambda sprite: None):
+    def __init__(
+        self,
+        event_lookup: EventLookup,
+        sprite_finder_func: SpriteFinder,
+        on_sprite_change: EntityCallback = lambda sprite: None,
+    ):
         self.under_mouse: pygame.sprite.Group = pygame.sprite.Group()
         self.sprite_finder_func: SpriteFinder = sprite_finder_func
         self.on_sprite_change: EntityCallback = on_sprite_change
@@ -71,24 +70,26 @@ class EntityMover:
         def on_up(pos: Point, sprites=sprites):
             for each in sprites:
                 self.put_down(each, pos)
-        self.on_mouse_up = on_up # type: ignore
 
-        def on_move(pos:Point, sprites=sprites):
+        self.on_mouse_up = on_up  # type: ignore
+
+        def on_move(pos: Point, sprites=sprites):
             for each in sprites:
                 self.update_pick_up(each, pos)
-        self.on_mouse_move = on_move # type: ignore
+
+        self.on_mouse_move = on_move  # type: ignore
 
     def mouse_move(self, event: pygame.event.Event) -> None:
         if not event.buttons[0]:
             return
         pos = Point(*event.pos)
-        self.on_mouse_move(pos) # type: ignore
+        self.on_mouse_move(pos)  # type: ignore
 
     def mouse_up(self, event: pygame.event.Event) -> None:
         if event.button != 1:
             return
         pos = Point(*event.pos)
-        self.on_mouse_up(pos) # type: ignore
+        self.on_mouse_up(pos)  # type: ignore
         self.on_mouse_up = lambda pos: None
         self.on_mouse_move = lambda pos: None
 

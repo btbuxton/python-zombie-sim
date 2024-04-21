@@ -19,12 +19,11 @@ from zombiesim.type_def import Bounds, Point, Direction
 from collections.abc import Generator
 
 
-def str_diff_time(begin: float,
-                  time_func: Callable[[], float] = time.time) -> str:
+def str_diff_time(begin: float, time_func: Callable[[], float] = time.time) -> str:
     end = int(round(time_func() - begin))
     rest, seconds = divmod(end, 60)
     hours, minutes = divmod(rest, 60)
-    return f'{hours} hours, {minutes} minutes, {seconds} seconds'
+    return f"{hours} hours, {minutes} minutes, {seconds} seconds"
 
 
 def span(rect: Bounds) -> float:
@@ -44,11 +43,9 @@ def random_angle_change(angle: float, amount: int) -> float:
     return angle + change
 
 
-def xfrange(start: float,
-            stop: float,
-            step: float) -> Generator[float, None, None]:
+def xfrange(start: float, stop: float, step: float) -> Generator[float, None, None]:
     current = start
-    while ((step > 0 and current < stop) or (step < 0 and current > stop)):
+    while (step > 0 and current < stop) or (step < 0 and current > stop):
         yield current
         current = current + step
 
@@ -58,11 +55,11 @@ def make_full_screen() -> None:
     flags = pygame.display.get_surface().get_flags()
     if not flags & pygame.FULLSCREEN:
         pygame.display.set_mode(
-            (display_info.current_w, display_info.current_h),
-            flags | pygame.FULLSCREEN)
+            (display_info.current_w, display_info.current_h), flags | pygame.FULLSCREEN
+        )
 
 
-ReturnT = TypeVar('ReturnT', bound=Any)
+ReturnT = TypeVar("ReturnT", bound=Any)
 CacheableFunc = Callable[..., ReturnT]
 
 
@@ -83,10 +80,14 @@ def cache_for(times: int = 1) -> Callable[[CacheableFunc], CacheableFunc]:
                 called += 1
                 inst_cache[id_ref] = called, value
                 if called == 1:
+
                     def finalizer() -> None:
                         with lock:
                             del inst_cache[id_ref]
+
                     weakref.finalize(ref, finalizer)
                 return value
+
         return wrapper
+
     return decorator

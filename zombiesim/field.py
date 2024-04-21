@@ -12,8 +12,14 @@ import random
 from typing import Callable, Optional, cast, Iterable
 
 import pygame
-from zombiesim.entities import Actor, Entity, FoodSprite, \
-    HumanSprite, ZombieSprite, EntityGroup
+from zombiesim.entities import (
+    Actor,
+    Entity,
+    FoodSprite,
+    HumanSprite,
+    ZombieSprite,
+    EntityGroup,
+)
 from zombiesim.event import EventLookup
 from zombiesim.entity_mover import EntityMover
 from zombiesim.type_def import Food, Human, Point, Bounds
@@ -55,8 +61,7 @@ class Field:
         return self.rect
 
     def start(self, events: EventLookup) -> None:
-        id = events.every_do(
-            ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
+        id = events.every_do(ZOMBIE_UPDATE_MS, lambda: self.zombies.update(self))
         self.registered_ids.append(id)
         id = events.every_do(HUMAN_UPDATE_MS, lambda: self.humans.update(self))
         self.registered_ids.append(id)
@@ -66,9 +71,9 @@ class Field:
         def reset_func(entity: Entity) -> None:
             entity.reset_pos()
 
-        self.mover = EntityMover(events,
-                                 self.entities_under,
-                                 on_sprite_change=reset_func)
+        self.mover = EntityMover(
+            events, self.entities_under, on_sprite_change=reset_func
+        )
 
     def stop(self, events: EventLookup) -> None:
         print("To all die: " + zutil.str_diff_time(self.started))
@@ -76,8 +81,11 @@ class Field:
             events.remove(each_id)
 
     def print_status(self):
-        print('Update: humans: {0} zombies: {1}'.format(
-            len(self.humans), len(self.zombies)))
+        print(
+            "Update: humans: {0} zombies: {1}".format(
+                len(self.humans), len(self.zombies)
+            )
+        )
 
     def update(self, screen: pygame.surface.Surface) -> bool:
         self.rect = screen.get_rect()
@@ -106,6 +114,7 @@ class Field:
         def check_and_fix(actor: Actor, parent_rect: pygame.rect.Rect):
             if not parent_rect.contains(actor.rect):
                 actor.hit_edge(parent_rect)
+
         for each_zombie in self.zombies:
             check_and_fix(each_zombie, self.rect)
         for each_human in self.humans:
@@ -138,17 +147,19 @@ class Field:
         new_zombie.rect.center = human.rect.center
 
     def entities_under(self, pos: Point) -> Iterable[Entity]:
-        return [each for each in itertools.chain(self.humans,
-                                                 self.zombies,
-                                                 self.food)
-                if each.rect.collidepoint(pos.x, pos.y)]
+        return [
+            each
+            for each in itertools.chain(self.humans, self.zombies, self.food)
+            if each.rect.collidepoint(pos.x, pos.y)
+        ]
 
     def find_who_can_eat(self, food: FoodSprite) -> list[Human]:
         humans = pygame.sprite.spritecollide(
             sprite=food,
             group=self.humans,
             dokill=False,
-            collided=pygame.sprite.collide_rect)
+            collided=pygame.sprite.collide_rect,
+        )
         return cast(list[Human], humans)
 
     def find_if_biten(self, zombie: ZombieSprite) -> list[HumanSprite]:
@@ -156,20 +167,24 @@ class Field:
             sprite=zombie,
             group=self.humans,
             dokill=True,
-            collided=pygame.sprite.collide_circle)
+            collided=pygame.sprite.collide_circle,
+        )
         return cast(list[HumanSprite], biten)
 
 
 CallableFieldCreator = Callable[[pygame.rect.Rect], Field]
 
 
-def field_creator(start_zombies: int = INITIAL_ZOMBIES,
-                  start_humans: int = INITIAL_HUMANS,
-                  max_food: int = MAX_FOOD) -> CallableFieldCreator:
+def field_creator(
+    start_zombies: int = INITIAL_ZOMBIES,
+    start_humans: int = INITIAL_HUMANS,
+    max_food: int = MAX_FOOD,
+) -> CallableFieldCreator:
     def creator(rect: pygame.rect.Rect) -> Field:
         point_creator = functools.partial(random_point, rect)
         zombies = ZombieSprite.create_group(start_zombies, point_creator)
         humans = HumanSprite.create_group(start_humans, point_creator)
         food = FoodSprite.create_group(max_food, point_creator)
         return Field(zombies=zombies, humans=humans, food=food, rect=rect)
+
     return creator
