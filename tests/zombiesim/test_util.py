@@ -5,7 +5,7 @@ Created on Dec 7, 2014
 """
 
 import unittest
-from zombiesim.types import Point
+from zombiesim.type_def import Point
 
 from zombiesim.util import xfrange
 

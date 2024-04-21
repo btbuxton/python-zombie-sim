@@ -15,7 +15,7 @@ import weakref
 from typing import Any, Callable, TypeVar
 
 import pygame
-from zombiesim.types import Bounds, Point, Direction
+from zombiesim.type_def import Bounds, Point, Direction
 from collections.abc import Generator
 
 

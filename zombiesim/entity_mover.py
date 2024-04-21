@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 import pygame
 from zombiesim.event import EventLookup
-from zombiesim.types import Point, EventCallback
+from zombiesim.type_def import Point, EventCallback
 from zombiesim.entities import Entity, EntityCallback
 
 SpriteCallback = Callable[[pygame.sprite.Sprite], None]
