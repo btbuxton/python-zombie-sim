@@ -7,8 +7,8 @@ name = "pypi"
 pygame = "==2.1.0"
 
 [dev-packages]
-mypy = "==0.910"
-pytest = "==7.1.2"
+mypy = "*"
+pytest = "*"
 black = "*"
 pylint = "*"
 
